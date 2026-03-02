@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Archive,
-  FolderOpen,
   ChevronDown,
   ChevronRight,
   CheckCircle2,
@@ -66,26 +65,29 @@ export default function ArchivesPage() {
       {/* Header */}
       <div className="flex items-center gap-2">
         <Archive className="h-5 w-5 text-zinc-400" />
-        <h2 className="text-xl font-semibold">Archives</h2>
+        <h2 className="text-xl font-semibold">归档</h2>
       </div>
 
       {/* Loading */}
       {loading && (
-        <p className="text-zinc-500 text-sm">Loading archives...</p>
+        <p className="text-zinc-500 text-sm">加载归档中...</p>
       )}
 
       {/* Empty state */}
       {!loading && archives.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <FolderOpen className="h-12 w-12 text-zinc-700 mb-4" />
+          <Archive className="h-16 w-16 text-cyan-500 mb-4" />
           <h3 className="text-lg font-medium text-zinc-400 mb-2">
-            No Archives Found
+            暂无归档记录
           </h3>
           <p className="text-sm text-zinc-600 max-w-md">
-            Archived Ralph runs will appear here. Archives are stored in{" "}
+            每次 Ralph 运行完成后，历史记录会自动归档到这里。
+            <br />
+            归档存储在{" "}
             <code className="text-xs bg-zinc-800 px-1.5 py-0.5 rounded">
               scripts/ralph/archive/
-            </code>
+            </code>{" "}
+            目录中。
           </p>
         </div>
       )}
@@ -101,8 +103,9 @@ export default function ArchivesPage() {
                 {/* Archive item header */}
                 <button
                   onClick={() => handleToggle(archive.folder)}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700 transition-colors text-left"
+                  className="relative w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700 transition-all duration-200 text-left group"
                 >
+                  <span className="absolute left-0 top-0 bottom-0 w-[2px] rounded-l-lg bg-gradient-to-b from-cyan-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                   {isExpanded ? (
                     <ChevronDown className="h-4 w-4 text-zinc-500 shrink-0" />
                   ) : (
@@ -136,7 +139,7 @@ export default function ArchivesPage() {
                         </div>
                         <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-green-600 rounded-full transition-all"
+                            className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all"
                             style={{
                               width: `${
                                 (archive.completedStories /
@@ -148,21 +151,27 @@ export default function ArchivesPage() {
                         </div>
                       </>
                     ) : (
-                      <span className="text-xs text-zinc-600">No stories</span>
+                      <span className="text-xs text-zinc-600">暂无故事</span>
                     )}
                   </div>
                 </button>
 
-                {/* Expanded detail */}
-                {isExpanded && (
-                  <div className="mt-2 ml-7 space-y-4">
-                    {detailLoading && (
+                {/* Expanded detail with CSS grid animation */}
+                <div
+                  className="grid transition-all duration-300 ease-in-out"
+                  style={{
+                    gridTemplateRows: isExpanded ? "1fr" : "0fr",
+                  }}
+                >
+                  <div className="overflow-hidden">
+                    <div className="mt-2 ml-7 space-y-4">
+                    {isExpanded && detailLoading && (
                       <p className="text-zinc-500 text-sm py-4">
-                        Loading archive details...
+                        加载归档详情...
                       </p>
                     )}
 
-                    {!detailLoading && archiveDetail && (
+                    {isExpanded && !detailLoading && archiveDetail && (
                       <>
                         {/* Project info */}
                         {archiveDetail.prd && (
@@ -204,13 +213,14 @@ export default function ArchivesPage() {
                         {/* Nothing found */}
                         {!archiveDetail.prd && !archiveDetail.progress && (
                           <p className="text-zinc-600 text-sm py-4">
-                            No prd.json or progress.txt found in this archive.
+                            此归档中未找到 prd.json 或 progress.txt。
                           </p>
                         )}
                       </>
                     )}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             );
           })}
@@ -232,7 +242,7 @@ function ArchiveProgressLog({ progress }: { progress: ProgressLogData }) {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <BookOpen className="h-4 w-4 text-zinc-500" />
-        <h4 className="text-sm font-medium text-zinc-400">Progress Log</h4>
+        <h4 className="text-sm font-medium text-zinc-400">进度日志</h4>
       </div>
 
       {/* Codebase Patterns */}
@@ -242,7 +252,7 @@ function ArchiveProgressLog({ progress }: { progress: ProgressLogData }) {
             <div className="flex items-center gap-2 mb-2">
               <Lightbulb className="h-3.5 w-3.5 text-violet-400" />
               <span className="text-xs font-semibold text-violet-300">
-                Codebase Patterns
+                代码库模式
               </span>
             </div>
             <ul className="space-y-1">

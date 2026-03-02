@@ -24,6 +24,7 @@ Started: 2026-03-02
 - Sidebar NavContent is shared between desktop aside and mobile Sheet (update once, both updated)
 - Use `style={{ borderImage: '...' }}` for gradient borders on elements that need non-Tailwind gradients
 - Active nav items use `relative` positioning with an absolutely-positioned gradient bar child
+- CSS grid-template-rows 0fr→1fr is the preferred expand/collapse animation pattern (no JS height calc needed)
 
 ## 2026-03-02 - US-001
 - Implemented global CSS variables and animation infrastructure
@@ -134,4 +135,21 @@ Started: 2026-03-02
   - `boxShadow` inline style works well for glow effects that need specific rgba values
   - `gradient-border` class from globals.css can be combined with existing Card className
   - `transition-shadow duration-200` + `hover:shadow-[...]` is the pattern for hover glow effects
+---
+
+## 2026-03-02 - US-008
+- Implemented archive page expand animation and empty state optimization
+- Expand/collapse now uses CSS grid-template-rows animation (0fr → 1fr) for smooth transitions
+- Archive items have hover left border gradient (2px brand gradient bar, opacity transition)
+- Progress bar changed from bg-green-600 to brand gradient (from-cyan-500 to-blue-500)
+- Empty state upgraded: Archive icon h-16 w-16 in cyan-500, friendlier Chinese copy
+- Removed unused FolderOpen import
+- Files changed:
+  - dashboard/src/app/(dashboard)/archives/page.tsx
+- **Learnings for future iterations:**
+  - CSS grid-template-rows 0fr→1fr trick works well for expand/collapse animations without JS height calculations
+  - Content inside grid animation needs `overflow-hidden` on the direct child wrapper
+  - Keep conditional rendering (`isExpanded &&`) for content that loads async to avoid rendering hidden content
+  - `group` + `group-hover:opacity-100` pattern is cleaner than JS for hover-triggered child visibility
+  - `transition-all duration-200` on the button + `transition-opacity` on the child gradient bar creates cohesive hover feel
 ---

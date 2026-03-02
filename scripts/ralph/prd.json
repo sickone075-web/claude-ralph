@@ -149,7 +149,7 @@
         "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "修改文件：dashboard/src/app/(dashboard)/archives/page.tsx。展开动画推荐使用 CSS grid-template-rows 技巧：外层 div 设置 grid + transition，内层 div overflow-hidden。空状态的 FolderOpen 图标可以改为 Archive 图标。"
     },
     {
