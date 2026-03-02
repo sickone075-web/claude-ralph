@@ -4,6 +4,8 @@
 - Dashboard is a Next.js app in dashboard/ with its own package.json
 - scripts/ralph/ contains runtime data (prd.json, progress.txt, archive/); scripts/ contains shared tools (ralph.sh, CLAUDE.md)
 - Use `npx tsc --noEmit` for root TypeScript checks; `cd dashboard && npm run build` for dashboard checks
+- CLI uses Commander.js with ESM imports; version read from package.json via readFileSync (not import assertion)
+- `npm link` at root makes `ralph` command available globally for testing
 
 # Ralph Progress Log
 Started: 2026年03月 2日 22:51:22
@@ -17,4 +19,14 @@ Started: 2026年03月 2日 22:51:22
   - scripts/ralph/ still contains runtime data files (prd.json, progress.txt, .last-branch, archive/) - these stay in place
   - Root tsconfig uses moduleResolution: "bundler" for ES module compatibility
   - npm install at root adds 51 packages (CLI deps: commander, inquirer, chalk, open)
+---
+
+## 2026-03-02 23:15 - US-002
+- What was implemented: CLI entry point with Commander.js - registered 5 subcommands (init, start, stop, config, add-project) with placeholder actions. `ralph` with no args shows help (exit 0). `ralph --version` outputs package.json version. Shebang preserved in compiled output. npm link tested successfully.
+- Files changed: src/bin/ralph.ts (rewritten from placeholder to full Commander.js CLI)
+- **Learnings for future iterations:**
+  - ESM module needs `fileURLToPath(import.meta.url)` for __dirname equivalent
+  - Commander.js `.action()` on program itself handles the no-args case (shows help with exit 0)
+  - `npx tsc` compiles to dist/ and preserves shebang line from source
+  - `npm link` works for global command testing without publishing
 ---

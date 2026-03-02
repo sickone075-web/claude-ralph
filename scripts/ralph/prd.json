@@ -37,7 +37,7 @@
         "本地 npm link 后 ralph --help 和 ralph --version 正常工作"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "依赖 US-001 的项目结构。Commander.js 的 .description() 和 .action() 用于注册命令。"
     },
     {
