@@ -30,6 +30,10 @@ Started: 2026-03-02
 - StorySheet component (`components/story-sheet.tsx`) for Sheet-based story create/edit forms
 - StoryEditDialog component (`components/story-edit-dialog.tsx`) for Dialog-based quick story editing
 - AlertDialog from shadcn/ui for delete confirmations
+- xterm.js: use `@xterm/xterm` (not deprecated `xterm`), `@xterm/addon-fit`, `@xterm/addon-web-links`
+- xterm must be dynamically imported with `next/dynamic` `ssr: false` to avoid SSR errors
+- TerminalView component uses `onReady` callback to expose `write`/`clear` handle to parent
+- Terminal page subscribes to `ralph:output` WebSocket events and pipes text to xterm via handle
 ---
 
 ## 2026-03-02 - US-001
@@ -205,4 +209,28 @@ Started: 2026-03-02
   - `handleDragEnd` should be wrapped in useCallback with sortedStories dependency for correct closure
   - AlertDialog from shadcn/ui works well for delete confirmation with controlled open state via `!!deleteTarget`
   - Priority label-to-number mapping: high=1-3, medium=4-7, low=8+; preserve existing number within range on edit
+---
+
+## 2026-03-02 - US-010
+- Built interactive terminal page with xterm.js and real-time streaming
+- Created TerminalView component (`components/terminal-view.tsx`) using `@xterm/xterm` with `@xterm/addon-fit` and `@xterm/addon-web-links`
+- Terminal dynamically imported via `next/dynamic` with `ssr: false` to prevent SSR errors
+- Dark terminal theme (#1a1a2e background) with JetBrains Mono font and full ANSI color rendering
+- Real-time mode: subscribes to `ralph:output` WebSocket events and pipes stdout/stderr into xterm
+- Input capability: keyboard input sends text via WebSocket `ralph:stdin` to Ralph process stdin
+- Page top bar: Ralph status badge (color-coded), current iteration/total badge, elapsed time timer
+- Quick start/stop buttons with AI tool selector (Claude/Amp) and max iterations dropdown
+- WebSocket connection indicator (Wifi/WifiOff icon)
+- When Ralph is not running, terminal shows ASCII art welcome message with start instructions
+- Parent-child communication via `onReady` callback pattern (TerminalView calls onReady with {write, clear} handle)
+- Build and typecheck pass with zero errors
+- Files changed: `src/app/(dashboard)/terminal/page.tsx`, `src/components/terminal-view.tsx` (new), `package.json`, `package-lock.json`
+- **Learnings for future iterations:**
+  - Use `@xterm/xterm` instead of deprecated `xterm` package; addons are `@xterm/addon-fit`, `@xterm/addon-web-links`
+  - xterm.js MUST be loaded via `next/dynamic` with `ssr: false` - it accesses DOM APIs not available in SSR
+  - Use `onReady` callback pattern instead of DOM element mutation for exposing terminal handle to parent
+  - xterm needs `\r\n` line endings - convert bare `\n` from process output with `.replace(/\r?\n/g, "\r\n")`
+  - `allowProposedApi: true` enables proposed xterm APIs (needed for some addons)
+  - FitAddon must be re-fitted on window resize for responsive terminal sizing
+  - Badge variants from shadcn/ui work well for status indicators in toolbars
 ---

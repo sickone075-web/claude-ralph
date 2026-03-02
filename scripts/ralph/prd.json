@@ -184,7 +184,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "xterm.js must be dynamically imported to avoid SSR issues. Use xterm-addon-fit for responsive terminal sizing."
     },
     {
