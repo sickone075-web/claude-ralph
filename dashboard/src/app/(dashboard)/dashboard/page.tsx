@@ -11,6 +11,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { KanbanBoard } from "@/components/kanban-board";
+import { SkeletonCard } from "@/components/skeleton-card";
 import { useDashboardStore } from "@/lib/store";
 import type { RalphStatus } from "@/lib/store";
 import type { Story } from "@/lib/types";
@@ -68,6 +69,57 @@ function CircularProgress({ percent }: { percent: number }) {
 export default function DashboardPage() {
   const { prd, ralphStatus, iteration, totalIterations, setPrd } =
     useDashboardStore();
+
+  if (!prd) {
+    return (
+      <div className="p-6 space-y-6">
+        {/* Page Header */}
+        <div className="flex items-center gap-3">
+          <LayoutDashboard className="h-5 w-5 text-zinc-400" />
+          <h1 className="text-2xl font-semibold text-zinc-100">仪表盘</h1>
+        </div>
+
+        {/* Stats Skeleton - Bento Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Project Info Skeleton - col-span-2 row-span-2 */}
+          <div className="col-span-2 row-span-2 skeleton rounded-lg p-5 flex flex-col justify-between">
+            <div>
+              <div className="h-5 w-24 bg-zinc-700/50 rounded mb-3 animate-pulse" />
+              <div className="h-7 w-48 bg-zinc-700/50 rounded mb-2 animate-pulse" />
+              <div className="h-4 w-64 bg-zinc-700/50 rounded animate-pulse" />
+            </div>
+            <div className="flex items-center gap-4 mt-4">
+              <div className="h-16 w-16 bg-zinc-700/50 rounded-full animate-pulse" />
+              <div>
+                <div className="h-4 w-16 bg-zinc-700/50 rounded mb-1 animate-pulse" />
+                <div className="h-3 w-20 bg-zinc-700/50 rounded animate-pulse" />
+              </div>
+            </div>
+          </div>
+          {/* 4 Stat Card Skeletons */}
+          <SkeletonCard className="h-[72px]" />
+          <SkeletonCard className="h-[72px]" />
+          <SkeletonCard className="h-[72px]" />
+          <SkeletonCard className="h-[72px]" />
+        </div>
+
+        {/* Kanban Skeleton - 3 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {["待处理", "进行中", "已完成"].map((title) => (
+            <div key={title} className="space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-3 w-3 bg-zinc-700/50 rounded-full animate-pulse" />
+                <div className="h-4 w-16 bg-zinc-700/50 rounded animate-pulse" />
+              </div>
+              <SkeletonCard className="h-24" />
+              <SkeletonCard className="h-24" />
+              {title === "待处理" && <SkeletonCard className="h-24" />}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const stories = prd?.userStories ?? [];
   const total = stories.length;
