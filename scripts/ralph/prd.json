@@ -72,7 +72,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Install simple-git as dependency. Parse progress.txt with regex for ## headers and bullet points."
     },
     {
@@ -90,7 +90,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Store process reference and status in module-level singleton. Detect iteration number by parsing stdout for 'Ralph Iteration X of Y' pattern."
     },
     {

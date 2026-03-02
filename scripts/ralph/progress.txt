@@ -15,6 +15,12 @@ Started: 2026-03-02
 - Shared types in `lib/types.ts` (PRD, Story, ApiResponse)
 - PRD file read/write helper in `lib/prd-file.ts` with atomic writes and in-memory mutex
 - Write operations: write to .tmp file then rename for atomic updates
+- Progress log parser in `lib/progress-parser.ts` splits by `---` separator and extracts structured records
+- simple-git library for git history access; project root is `path.resolve(process.cwd(), "..")`
+- Ralph process manager singleton in `lib/ralph-process.ts` with event listener pattern for WebSocket integration
+- Process control API routes under `app/api/ralph/` (start, stop, stdin, status)
+- On Windows, use `bash` to spawn `.sh` scripts; on Unix, spawn script directly
+- Process termination: Windows uses `taskkill /pid /t /f`, Unix uses SIGTERM
 ---
 
 ## 2026-03-02 - US-001
@@ -69,4 +75,40 @@ Started: 2026-03-02
   - `fs.renameSync` is atomic on same filesystem - good for preventing partial writes
   - Next.js route files can export multiple HTTP methods (GET, POST, PUT, DELETE, PATCH) from one file
   - Reorder endpoint uses PATCH on a sub-route `/stories/reorder` to avoid conflict with `/stories/[id]`
+---
+
+## 2026-03-02 - US-004
+- Created `lib/progress-parser.ts` to parse progress.txt into structured ProgressRecord array
+- Parser splits by `---` separator, extracts date/storyId from `## Date - US-XXX` headers
+- Extracts summary bullets, files changed (from backtick-wrapped paths), and learnings section
+- Added ProgressRecord and GitCommit types to `lib/types.ts`
+- GET /api/logs/progress returns parsed progress records; file not found returns empty array (not error)
+- GET /api/logs/git returns last 50 git commits via simple-git (short hash, message, date, author)
+- Build and typecheck pass with zero errors
+- Files changed: `src/lib/types.ts`, `src/lib/progress-parser.ts` (new), `src/app/api/logs/progress/route.ts` (new), `src/app/api/logs/git/route.ts` (new), `package.json`
+- **Learnings for future iterations:**
+  - simple-git: use `simpleGit(projectRoot)` with named import `{ simpleGit }` from "simple-git"
+  - `git.log({ maxCount: 50 })` returns `.all` array with `hash`, `message`, `date`, `author_name`
+  - File not found for progress.txt returns `{ data: [], error: null }` (empty array, not 404)
+  - Progress parser uses regex to extract structured data from markdown-formatted log
+---
+
+## 2026-03-02 - US-005
+- Created process manager singleton in `lib/ralph-process.ts` using child_process.spawn
+- POST /api/ralph/start spawns ralph.sh with tool (claude/amp) and maxIterations params
+- POST /api/ralph/stop terminates running Ralph process (Windows: taskkill, Unix: SIGTERM)
+- POST /api/ralph/stdin sends input string to Ralph process stdin
+- GET /api/ralph/status returns status (idle/running/completed/error), iteration number, startedAt
+- Duplicate start returns 409 "Ralph is already running"
+- Process exit automatically cleans up reference and updates status
+- Event listener pattern (`onEvent`) for future WebSocket integration
+- Build and typecheck pass with zero errors
+- Files changed: `src/lib/ralph-process.ts` (new), `src/app/api/ralph/start/route.ts` (new), `src/app/api/ralph/stop/route.ts` (new), `src/app/api/ralph/stdin/route.ts` (new), `src/app/api/ralph/status/route.ts` (new)
+- **Learnings for future iterations:**
+  - Module-level singleton state works well for process management in Next.js (persists across requests in dev)
+  - `child_process.spawn` with `stdio: ["pipe", "pipe", "pipe"]` enables bidirectional communication
+  - On Windows, `.sh` scripts must be spawned via `bash` command, not directly
+  - `execSync("taskkill /pid X /t /f")` for Windows process termination (kills process tree)
+  - Event listener pattern (onEvent/emit) enables clean WebSocket integration in US-006
+  - Iteration detection via regex on stdout: `/Ralph Iteration (\d+) of (\d+)/`
 ---
