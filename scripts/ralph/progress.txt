@@ -40,3 +40,14 @@ Started: 2026年03月 2日 22:51:22
   - Config merges with defaults on read, so adding new fields to DEFAULT_CONFIG is backward-compatible with existing config files.
   - The module uses only Node.js built-in modules (fs, os, path, crypto) — no external dependencies needed.
 ---
+
+## 2026-03-02 23:45 - US-004
+- What was implemented: Interactive init wizard (Part 1) — src/commands/init.ts with Steps 0-3. Step 0: detect existing config and ask overwrite/keep/exit. Step 1: ASCII logo, version, permission declaration with confirm prompt. Step 2: Node.js version check (>= 18 required), Claude CLI detection (warns but allows continue). Step 3: Windows Git Bash path auto-detection and manual input (only on win32). Wired `runInit()` into ralph.ts `init` command.
+- Files changed: src/commands/init.ts (new), src/bin/ralph.ts (updated import and init action)
+- **Learnings for future iterations:**
+  - Inquirer.js v12 uses ESM and `inquirer.prompt<T>()` generic for typed answers
+  - chalk.hex('#6366f1') creates a brand color helper for consistent styling
+  - `execSync('where claude')` on Windows / `which claude` on Unix for CLI detection
+  - `platform()` from `node:os` for cross-platform branching (win32 check for Git Bash step)
+  - US-005 will continue init.ts with steps 4-8 (feishu, params, project, plugin, completion)
+---

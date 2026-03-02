@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { runInit } from '../commands/init.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,8 +22,8 @@ program
 program
   .command('init')
   .description('交互式初始化引导')
-  .action(() => {
-    console.log('ralph init - 即将实现');
+  .action(async () => {
+    await runInit();
   });
 
 program

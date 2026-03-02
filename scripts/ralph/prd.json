@@ -73,7 +73,7 @@
         "TypeScript 类型检查通过"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "依赖 US-002 的 CLI 入口和 US-003 的配置模块。这是 init 流程的前半部分，后半部分在 US-005。"
     },
     {
