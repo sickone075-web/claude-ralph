@@ -1,3 +1,50 @@
 # Ralph Progress Log
 Started: 2026-03-02
+
+## Codebase Patterns
+- Next.js 16 App Router with Tailwind CSS v4 + shadcn/ui in `dashboard/` directory
+- Dark theme enforced via `className="dark"` on `<html>` element
+- Sidebar layout uses `(dashboard)` route group with shared layout.tsx
+- shadcn/ui components installed via `npx shadcn@latest add <component>`
+- Sidebar colors: zinc-950 background, zinc-800 selected item, zinc-400 text
+- All pages are at `app/(dashboard)/*/page.tsx`
+- Root page (`/`) redirects to `/dashboard`
+- API routes go in `app/api/` directory using Next.js Route Handlers
+- API responses use `{ data: T | null, error: string | null }` format
+- Config helper in `lib/config.ts` reads optional `dashboard/config.json` with defaults
+- Shared types in `lib/types.ts` (PRD, Story, ApiResponse)
+---
+
+## 2026-03-02 - US-001
+- Scaffolded Next.js 16 App Router project in dashboard/ directory
+- Configured Tailwind CSS v4 + shadcn/ui with dark theme as default
+- Created sidebar layout (240px fixed) with navigation: Dashboard, Stories, Terminal, Logs, Archives, Settings
+- Ralph status indicator component (static placeholder, idle state with gray dot)
+- Responsive layout: sidebar collapses to hamburger Sheet on mobile (md breakpoint)
+- All nav items link to placeholder pages at app/(dashboard)/*/page.tsx
+- Build succeeds with zero TypeScript errors
+- Files changed: 32 files (full scaffold)
+- **Learnings for future iterations:**
+  - Next.js 16 uses Tailwind CSS v4 with `@import "tailwindcss"` syntax, not v3 config files
+  - shadcn/ui init with `--defaults` flag auto-configures everything
+  - Sheet component from shadcn/ui works well for mobile sidebar
+  - Use `(dashboard)` route group to share sidebar layout across all pages without affecting URL
+  - lucide-react is included as a transitive dependency from shadcn/ui
+---
+
+## 2026-03-02 - US-002
+- Created shared TypeScript types in `lib/types.ts`: PRD, Story, ApiResponse<T>
+- Created config helper in `lib/config.ts` with defaults and optional config.json override
+- GET /api/prd returns full prd.json content
+- GET /api/prd/stories returns userStories array
+- GET /api/prd/stories/[id] returns single story by id
+- File not found returns 404 with proper error format
+- All API responses use `{ data: T | null, error: string | null }` format
+- Build and typecheck pass with zero errors
+- Files changed: `src/lib/types.ts`, `src/lib/config.ts`, `src/app/api/prd/route.ts`, `src/app/api/prd/stories/route.ts`, `src/app/api/prd/stories/[id]/route.ts`
+- **Learnings for future iterations:**
+  - Next.js 16 Route Handlers: dynamic params are `{ params: Promise<{ id: string }> }` (must await)
+  - Use `satisfies ApiResponse<T>` for type-safe response bodies
+  - `path.resolve(process.cwd(), "..")` navigates from dashboard/ to project root
+  - Config file is optional: catch ENOENT and return defaults
 ---
