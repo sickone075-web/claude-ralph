@@ -12,9 +12,9 @@ function getPriorityColor(priority: number): string {
 }
 
 function getPriorityLabel(priority: number): string {
-  if (priority <= 3) return "High";
-  if (priority <= 7) return "Medium";
-  return "Low";
+  if (priority <= 3) return "高";
+  if (priority <= 7) return "中";
+  return "低";
 }
 
 interface KanbanCardProps {
@@ -44,10 +44,10 @@ export function KanbanCard({
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           onClick={onClick}
-          className={`rounded-lg border border-zinc-800 border-l-4 ${getPriorityColor(
+          className={`card-glow rounded-lg border border-zinc-800 border-l-4 ${getPriorityColor(
             story.priority
-          )} bg-zinc-900 p-3 cursor-pointer transition-colors hover:bg-zinc-800/70 ${
-            snapshot.isDragging ? "shadow-lg shadow-black/50 ring-1 ring-zinc-700" : ""
+          )} bg-zinc-900 p-3 cursor-pointer transition-all hover:bg-zinc-800/70 ${
+            snapshot.isDragging ? "shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-500/30" : ""
           }`}
         >
           <div className="flex items-start justify-between gap-2">

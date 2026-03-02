@@ -113,7 +113,7 @@ export function KanbanBoard({
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     className={`flex-1 rounded-lg border border-zinc-800/50 p-2 min-h-[120px] space-y-2 transition-colors ${
-                      snapshot.isDraggingOver ? "bg-zinc-800/30 border-zinc-700" : "bg-zinc-900/30"
+                      snapshot.isDraggingOver ? "bg-cyan-500/5 border-cyan-500/20" : "bg-zinc-900/30"
                     }`}
                   >
                     {columns[col.id].map((story, index) => (
