@@ -24,6 +24,9 @@ Started: 2026-03-02
 - WebSocket server in `server/ws.ts` runs standalone on port 3001 via `tsx`, imports ralph-process for event piping
 - `npm run dev` uses `concurrently` to run Next.js + WebSocket server together
 - chokidar watches prd.json and progress.txt for file change events broadcast via WebSocket
+- KanbanBoard component (`components/kanban-board.tsx`) accepts `readOnly` prop for reuse in archives
+- StoryEditDialog component (`components/story-edit-dialog.tsx`) is reusable for story editing
+- @hello-pangea/dnd for drag-and-drop: DragDropContext > Droppable > Draggable; requires "use client"
 ---
 
 ## 2026-03-02 - US-001
@@ -132,4 +135,49 @@ Started: 2026-03-02
   - `concurrently` with `--names` and `--prefix-colors` gives clear log output for multiple processes
   - `tsx` is needed in devDependencies to run TypeScript server files directly
   - The WS server and Next.js API routes share the same ralph-process module source but run in separate processes - for full integration, API route calls go through Next.js while real-time events flow through WebSocket
+- Zustand store in `lib/store.ts` holds global state: Ralph status, iteration info, PRD data, WebSocket connection state
+- WebSocket hook in `hooks/use-websocket.ts` with auto-reconnect exponential backoff (1s→30s max)
+- `WebSocketProvider` component in `components/websocket-provider.tsx` wraps dashboard layout for app-level WS connection
+- Derived hooks: `useRalphStatus()` and `usePrd()` read from Zustand store
+- `useWebSocketEvents()` wires WS events to Zustand store updates
+---
+
+## 2026-03-02 - US-007
+- Created Zustand store in `lib/store.ts` with Ralph status, PRD data, and WebSocket connection state
+- Created `useWebSocket` hook with auto-reconnect (exponential backoff: 1s, 2s, 4s, 8s, 16s, max 30s)
+- Created `useRalphStatus` and `usePrd` convenience hooks reading from Zustand store
+- Created `useWebSocketEvents` hook that subscribes to ralph:status, ralph:iteration, and prd:updated events
+- Created `WebSocketProvider` component that establishes WS connection at app level and fetches initial data
+- Updated `RalphStatusIndicator` to read from Zustand store with dynamic color/animation per status
+- Wired WebSocketProvider into dashboard layout
+- Build and typecheck pass with zero errors
+- Files changed: `src/lib/store.ts` (new), `src/hooks/use-websocket.ts` (new), `src/components/websocket-provider.tsx` (new), `src/components/ralph-status-indicator.tsx`, `src/app/(dashboard)/layout.tsx`, `package.json`
+- **Learnings for future iterations:**
+  - Zustand `create<T>()` with TypeScript generics provides clean type-safe global state
+  - WebSocket reconnect should use `mountedRef` to prevent reconnection after component unmount
+  - `useWebSocketEvents` separated from `useWebSocket` so event wiring logic is cleanly isolated
+  - WebSocketProvider fetches initial Ralph status and PRD on mount, then keeps them updated via WS events
+  - prd:updated event triggers a re-fetch from API rather than receiving data in the WS payload (keeps WS lean)
+  - Sidebar status indicator is a client component reading Zustand store - no prop drilling needed
+---
+
+## 2026-03-02 - US-008
+- Built Dashboard kanban overview page with info bar, stats row, and three-column kanban board
+- Info bar shows project name, description, branch name badge, and Ralph status badge (linked to Zustand global state)
+- Stats row: total stories, completed count, pending count, circular SVG progress ring with percentage
+- Three-column kanban layout: Pending / In Progress / Completed with drag-and-drop via @hello-pangea/dnd
+- KanbanCard component: ID badge, title, priority color left border (red/amber/zinc), passes status icon, loading spinner for in-progress
+- Dropping card to Completed sets passes=true, dropping out sets passes=false (calls PUT /api/prd/stories/:id)
+- Click card opens StoryEditDialog (shadcn/ui Dialog) with full edit form for title, description, criteria, notes, passes toggle
+- Data auto-refreshes via WebSocket prd:updated events through Zustand store
+- Installed @hello-pangea/dnd, shadcn/ui: dialog, badge, card, progress, input, textarea, select, label, switch
+- Build and typecheck pass with zero errors
+- Files changed: `src/app/(dashboard)/dashboard/page.tsx`, `src/components/kanban-board.tsx` (new), `src/components/kanban-card.tsx` (new), `src/components/story-edit-dialog.tsx` (new), `src/components/ui/` (8 new shadcn components), `package.json`, `package-lock.json`
+- **Learnings for future iterations:**
+  - @hello-pangea/dnd requires DragDropContext > Droppable > Draggable nesting; "use client" required for all DnD components
+  - KanbanBoard component has `readOnly` prop to disable drag-and-drop - reuse in Archives page (US-013)
+  - StoryEditDialog is a reusable component for story editing - reuse in Stories page (US-009)
+  - CircularProgress SVG: use strokeDasharray/strokeDashoffset for ring progress animation
+  - In Progress detection: find first story with passes=false when Ralph is running
+  - Optimistic UI update pattern: update Zustand store immediately after API call, WebSocket sync as fallback
 ---

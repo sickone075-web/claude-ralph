@@ -124,7 +124,7 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Install zustand. Hooks should be client components ('use client'). WebSocket connection is established once at app level and shared via store."
     },
     {
@@ -144,7 +144,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "Install @hello-pangea/dnd. In Progress detection: compare current iteration story ID from Ralph status. Columns are equal width with 8px card gap."
     },
     {
