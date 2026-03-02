@@ -34,6 +34,10 @@ Started: 2026-03-02
 - xterm must be dynamically imported with `next/dynamic` `ssr: false` to avoid SSR errors
 - TerminalView component uses `onReady` callback to expose `write`/`clear` handle to parent
 - Terminal page subscribes to `ralph:output` WebSocket events and pipes text to xterm via handle
+- TerminalView supports `readOnly` prop: disables stdin, changes cursor style, for history mode
+- shadcn/ui Tabs component with `variant="line"` for terminal iteration tabs
+- Iteration output buffered in component state (Map<number, IterationBuffer>), detected via `ralph:iteration` WS events
+- Download .log strips ANSI codes with regex: `.replace(/\x1b\[[0-9;]*m/g, "")`
 ---
 
 ## 2026-03-02 - US-001
@@ -233,4 +237,28 @@ Started: 2026-03-02
   - `allowProposedApi: true` enables proposed xterm APIs (needed for some addons)
   - FitAddon must be re-fitted on window resize for responsive terminal sizing
   - Badge variants from shadcn/ui work well for status indicators in toolbars
+---
+
+## 2026-03-02 - US-011
+- Added terminal history mode with iteration tabs and toolbar
+- Tab bar above terminal: "Live" tab (with green pulse dot when running) + per-iteration tabs auto-created on ralph:iteration events
+- Iteration output buffered in component state (Map<number, IterationBuffer>), saved when new iteration starts or Ralph stops
+- Clicking iteration tab loads buffered output into a read-only xterm instance (disableStdin, no cursor blink)
+- Live tab shows current real-time stream (default when Ralph is running)
+- Toolbar buttons: Clear output (live tab only), Pause/Resume auto-scroll toggle (green=active), Download current output as .log file
+- Download strips ANSI escape codes for clean log files
+- Completion summary bar after Ralph finishes: shows stories completed count and total elapsed time
+- Installed shadcn/ui Tabs component
+- Updated TerminalView component with `readOnly` prop support (disableStdin, underline cursor)
+- Restructured page layout: Tabs component wraps both tab bar and content for proper flex sizing
+- Build and typecheck pass with zero errors
+- Files changed: `src/app/(dashboard)/terminal/page.tsx`, `src/components/terminal-view.tsx`, `src/components/ui/tabs.tsx` (new), `package.json`, `package-lock.json`
+- **Learnings for future iterations:**
+  - shadcn/ui Tabs with `variant="line"` gives a clean underline-style tab indicator
+  - xterm `disableStdin: true` makes terminal read-only without extra code
+  - Iteration boundary detection relies on `ralph:iteration` WebSocket events - output between events is one iteration's buffer
+  - `Math.max(...map.keys(), 0)` with spread works for Map keys to find max iteration number
+  - Tabs component needs `flex-1 min-h-0 flex flex-col gap-0` to properly fill remaining space with TabsContent
+  - ANSI stripping regex `/\x1b\[[0-9;]*m/g` handles most color/style codes for log download
+  - History terminal uses shared handleHistoryTerminalReady callback to load buffer when terminal mounts
 ---

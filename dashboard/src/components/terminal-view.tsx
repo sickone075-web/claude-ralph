@@ -15,6 +15,7 @@ interface TerminalViewProps {
   onInput?: (data: string) => void;
   welcomeMessage?: string;
   onReady?: (handle: TerminalHandle) => void;
+  readOnly?: boolean;
 }
 
 export default function TerminalViewWrapper(props: TerminalViewProps) {
@@ -22,7 +23,7 @@ export default function TerminalViewWrapper(props: TerminalViewProps) {
 }
 
 const TerminalViewInner = forwardRef<TerminalHandle, TerminalViewProps>(
-  function TerminalViewInner({ onInput, welcomeMessage, onReady }, ref) {
+  function TerminalViewInner({ onInput, welcomeMessage, onReady, readOnly }, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
     const termRef = useRef<XTerm | null>(null);
 
@@ -61,10 +62,11 @@ const TerminalViewInner = forwardRef<TerminalHandle, TerminalViewProps>(
         fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
         fontSize: 14,
         lineHeight: 1.2,
-        cursorBlink: true,
-        cursorStyle: "bar",
+        cursorBlink: !readOnly,
+        cursorStyle: readOnly ? "underline" : "bar",
         scrollback: 10000,
         allowProposedApi: true,
+        disableStdin: !!readOnly,
       });
 
       const fitAddon = new FitAddon();
@@ -82,7 +84,7 @@ const TerminalViewInner = forwardRef<TerminalHandle, TerminalViewProps>(
         term.writeln(welcomeMessage);
       }
 
-      if (onInput) {
+      if (onInput && !readOnly) {
         term.onData((data) => {
           onInput(data);
         });
