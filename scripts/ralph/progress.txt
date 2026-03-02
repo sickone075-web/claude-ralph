@@ -311,4 +311,32 @@ Started: 2026-03-02
   - `encodeURIComponent()` for folder names in fetch URLs prevents issues with special characters
   - Empty state pattern: icon + heading + description centered with padding for visual weight
   - Progress log sub-component (ArchiveProgressLog) keeps archive page clean by encapsulating timeline rendering
+- Config API: GET/POST /api/config endpoints in `app/api/config/route.ts`; DELETE resets to defaults
+- `sonner` toast library used via shadcn/ui `Toaster` component in root layout for notifications
+- Slider component from shadcn/ui for range inputs (terminal font size 12-24px)
+- Settings page exports `DashboardConfig` type from `lib/config.ts` (shared with API route)
+---
+
+## 2026-03-02 - US-014
+- Built settings page with configuration form using shadcn/ui Form components
+- Three settings groups: Path Configuration, Default Parameters, Interface
+- Path Configuration: Ralph script path, PRD file path, Progress file path (Input fields)
+- Default Parameters: AI tool select (Claude/Amp dropdown), max iterations (number input, default 10)
+- Interface: terminal font size slider (12-24px) with live value display
+- Extended `lib/config.ts` with `DashboardConfig` interface adding `defaultTool`, `defaultMaxIterations`, `terminalFontSize` fields
+- Exported `writeConfig()` function with atomic file write (tmp + rename) for safe config persistence
+- Created GET /api/config (reads config with defaults), POST /api/config (saves merged config), DELETE /api/config (resets to defaults)
+- Save success shows sonner Toast notification; errors show error toast
+- Reset to Defaults button restores all fields to default values
+- Installed shadcn/ui sonner (toast) and slider components
+- Added `<Toaster />` to root layout for app-wide toast notifications
+- Build and typecheck pass with zero errors
+- Files changed: `src/lib/config.ts`, `src/app/(dashboard)/settings/page.tsx`, `src/app/api/config/route.ts` (new), `src/app/layout.tsx`, `src/components/ui/sonner.tsx` (new), `src/components/ui/slider.tsx` (new), `package.json`, `package-lock.json`
+- **Learnings for future iterations:**
+  - `sonner` is the recommended toast library for shadcn/ui; use `toast.success()` / `toast.error()` from "sonner" directly
+  - `Toaster` component goes in root layout.tsx (not dashboard layout) for app-wide coverage
+  - Slider from shadcn/ui uses `value={[number]}` (array) and `onValueChange={([value]) => ...}` (destructured array)
+  - Config `writeConfig()` merges partial updates with current config - supports partial saves
+  - DELETE method on config API is a clean pattern for "reset to defaults" functionality
+  - DashboardConfig type is now exported from `lib/config.ts` for import in API routes
 ---
