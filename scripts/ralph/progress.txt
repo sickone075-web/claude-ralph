@@ -153,3 +153,54 @@ Started: 2026-03-02
   - `group` + `group-hover:opacity-100` pattern is cleaner than JS for hover-triggered child visibility
   - `transition-all duration-200` on the button + `transition-opacity` on the child gradient bar creates cohesive hover feel
 ---
+
+## 2026-03-02 - US-009
+- Implemented settings page form grouping and feedback optimization
+- Each Card section now has a 3px brand gradient left border (borderImage: linear-gradient cyan→blue)
+- All Input fields get brand cyan focus ring (focus:ring-cyan-500/30 focus:border-cyan-500/50)
+- Slider range track updated from bg-primary to brand gradient (from-cyan-500 to-blue-500)
+- Save button uses brand gradient background with card-glow hover effect
+- Reset button adds transition-all duration-200 for smooth hover
+- Loading state replaced with 3 SkeletonCard components matching actual Card layout
+- Toast notifications remain unchanged (sonner handles its own styling)
+- Files changed:
+  - dashboard/src/app/(dashboard)/settings/page.tsx (gradient borders, focus rings, button styles, skeleton loading)
+  - dashboard/src/components/ui/slider.tsx (range track changed to brand gradient)
+- **Learnings for future iterations:**
+  - `borderImage: 'linear-gradient(...) 1'` with `borderImageSlice: 1` is the reliable way to apply gradient to specific borders (e.g., left only)
+  - Slider component's Range uses `bg-primary` by default - changing to gradient affects all Slider instances globally
+  - SkeletonCard component works well for loading states, just vary the height to approximate actual content
+  - `card-glow` class works on Button components for hover glow effect
+---
+
+## 2026-03-02 - US-010
+- Implemented kanban card and board visual upgrade
+- Added `card-glow` class to kanban cards for hover glow effect
+- Changed drag state shadow from `shadow-black/50 ring-zinc-700` to `shadow-cyan-500/10 ring-cyan-500/30`
+- Changed drag hover zone from `bg-zinc-800/30 border-zinc-700` to `bg-cyan-500/5 border-cyan-500/20`
+- "进行中" column dot was already `bg-cyan-500` from US-003
+- Changed `transition-colors` to `transition-all` on cards to support shadow/ring transitions
+- Files changed:
+  - dashboard/src/components/kanban-card.tsx (card-glow class, brand drag shadow)
+  - dashboard/src/components/kanban-board.tsx (brand drag hover zone)
+- **Learnings for future iterations:**
+  - `transition-all` is needed instead of `transition-colors` when card-glow and ring effects are in play
+  - The kanban-board columnConfig was already updated in US-003 for the inProgress dot color
+  - Minimal changes needed: just class string updates, no structural changes required
+---
+
+## 2026-03-02 - US-011
+- Implemented edit dialog and sheet visual unification with brand styling
+- DialogTitle "编辑故事" text now uses brand gradient (bg-clip-text text-transparent)
+- SheetTitle text now uses brand gradient for both edit and create modes
+- Save/Create buttons use brand gradient background (from-cyan-600 to-blue-600) with hover lightening
+- All Input and Textarea fields get brand cyan focus ring (focus:ring-cyan-500/30 focus:border-cyan-500/50)
+- Add criterion button hover changed from zinc-200 to cyan-400 brand color
+- Files changed:
+  - dashboard/src/components/story-edit-dialog.tsx (gradient title, gradient save button, focus rings, add button hover)
+  - dashboard/src/components/story-sheet.tsx (gradient title, gradient create/save button, focus rings, add button hover)
+- **Learnings for future iterations:**
+  - Both story-edit-dialog and story-sheet have near-identical form structure; changes to one should be mirrored in the other
+  - `bg-clip-text text-transparent` with gradient works on any text element for brand gradient text effect
+  - Focus ring classes can be added directly to shadcn Input/Textarea className prop
+---
