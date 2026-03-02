@@ -40,10 +40,10 @@ function getPriorityColor(priority: number): string {
 
 function getPriorityTag(priority: number): { label: string; className: string } {
   if (priority <= 3)
-    return { label: "High", className: "bg-red-500/10 text-red-400 border-red-500/20" };
+    return { label: "高", className: "bg-gradient-to-r from-red-500/20 to-red-400/10 text-red-400 border-red-500/20" };
   if (priority <= 7)
-    return { label: "Medium", className: "bg-amber-500/10 text-amber-400 border-amber-500/20" };
-  return { label: "Low", className: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" };
+    return { label: "中", className: "bg-gradient-to-r from-amber-500/20 to-amber-400/10 text-amber-400 border-amber-500/20" };
+  return { label: "低", className: "bg-gradient-to-r from-zinc-500/20 to-zinc-400/10 text-zinc-400 border-zinc-500/20" };
 }
 
 export default function StoriesPage() {
@@ -157,13 +157,16 @@ export default function StoriesPage() {
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <BookOpen className="h-5 w-5 text-zinc-400" />
-          <h2 className="text-xl font-semibold text-zinc-200">User Stories</h2>
+          <h2 className="text-xl font-semibold text-zinc-200">用户故事</h2>
+          <Badge className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white border-0 text-xs">
+            {stories.length}
+          </Badge>
         </div>
         <Button onClick={handleNew} size="sm">
           <Plus className="h-4 w-4 mr-1" />
-          New Story
+          新建故事
         </Button>
       </div>
 
@@ -187,11 +190,11 @@ export default function StoriesPage() {
                       <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
-                        className={`rounded-lg border border-zinc-800 border-l-4 ${getPriorityColor(
+                        className={`card-glow rounded-lg border border-zinc-800 border-l-4 ${getPriorityColor(
                           story.priority
-                        )} bg-zinc-900 p-4 transition-colors ${
+                        )} bg-zinc-900 p-4 transition-all ${
                           snapshot.isDragging
-                            ? "shadow-lg shadow-black/50 ring-1 ring-zinc-700"
+                            ? "shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-500/20"
                             : ""
                         }`}
                       >
@@ -234,9 +237,9 @@ export default function StoriesPage() {
                               aria-label={`Toggle passes for ${story.id}`}
                             />
                             {story.passes ? (
-                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                              <CheckCircle2 className="h-4 w-4 text-green-500 transition-all duration-200" />
                             ) : (
-                              <Circle className="h-4 w-4 text-zinc-600" />
+                              <Circle className="h-4 w-4 text-zinc-600 transition-all duration-200" />
                             )}
                           </div>
 
@@ -264,8 +267,12 @@ export default function StoriesPage() {
       </DragDropContext>
 
       {sortedStories.length === 0 && (
-        <div className="text-center text-zinc-500 py-12">
-          No stories yet. Click &ldquo;New Story&rdquo; to create one.
+        <div className="flex flex-col items-center justify-center text-center py-16">
+          <div className="mb-4 text-cyan-500">
+            <BookOpen className="h-16 w-16" strokeWidth={1.5} />
+          </div>
+          <p className="text-zinc-400 text-lg mb-1">暂无用户故事</p>
+          <p className="text-zinc-500 text-sm">点击右上角的&ldquo;新建故事&rdquo;按钮开始创建</p>
         </div>
       )}
 
@@ -283,23 +290,23 @@ export default function StoriesPage() {
         <AlertDialogContent className="bg-zinc-950 border-zinc-800">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-zinc-200">
-              Delete Story
+              删除故事
             </AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400">
-              Are you sure you want to delete{" "}
+              确定要删除{" "}
               <span className="font-mono text-zinc-300">{deleteTarget?.id}</span>{" "}
-              &ldquo;{deleteTarget?.title}&rdquo;? This action cannot be undone.
+              &ldquo;{deleteTarget?.title}&rdquo;吗？此操作无法撤销。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="border-zinc-800 text-zinc-400">
-              Cancel
+              取消
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-600 text-white hover:bg-red-700"
+              className="bg-red-600 text-white hover:bg-red-700 transition-all duration-200"
             >
-              Delete
+              删除
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
