@@ -34,7 +34,7 @@
         "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "修改文件：dashboard/src/components/sidebar.tsx 和 dashboard/src/components/ralph-status-indicator.tsx。侧边栏使用 NavContent 组件同时在桌面和移动端渲染。"
     },
     {
@@ -53,7 +53,7 @@
         "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "修改文件：dashboard/src/app/(dashboard)/dashboard/page.tsx。Bento Grid 使用 CSS Grid 实现。圆环进度 SVG 需要添加 <defs><linearGradient> 元素。statusBadge 配置对象需要更新 running 状态的 className。"
     },
     {

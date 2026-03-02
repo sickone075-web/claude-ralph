@@ -21,6 +21,9 @@ Started: 2026-03-02
 - Brand colors: --brand-cyan (#06B6D4) and --brand-blue (#3B82F6) defined in globals.css
 - Utility classes card-glow, gradient-border, skeleton available in globals.css
 - Animation classes: animate-fade-in, animate-slide-up available globally
+- Sidebar NavContent is shared between desktop aside and mobile Sheet (update once, both updated)
+- Use `style={{ borderImage: '...' }}` for gradient borders on elements that need non-Tailwind gradients
+- Active nav items use `relative` positioning with an absolutely-positioned gradient bar child
 
 ## 2026-03-02 - US-001
 - Implemented global CSS variables and animation infrastructure
@@ -32,4 +35,34 @@ Started: 2026-03-02
   - The `.dark` block already exists in globals.css - add brand vars there too for consistency
   - Custom utility classes (card-glow, gradient-border, skeleton) work alongside Tailwind classes
   - SkeletonCard accepts className prop for flexible sizing via `cn()` utility
+---
+
+## 2026-03-02 - US-002
+- Implemented sidebar visual upgrade with brand gradient styling
+- Files changed:
+  - dashboard/src/components/sidebar.tsx (gradient logo, active nav border bar, hover transitions, gradient status border, mobile header)
+  - dashboard/src/components/ralph-status-indicator.tsx (running status dot changed to brand cyan)
+- **Learnings for future iterations:**
+  - NavContent is shared between desktop and mobile - changes apply to both automatically
+  - `borderImage` CSS property works well for gradient borders that Tailwind can't handle natively
+  - Active state uses a `relative` parent + `absolute` child span for the left gradient bar
+  - `transition-colors duration-200` provides smooth hover feedback on nav items
+---
+
+## 2026-03-02 - US-003
+- Implemented Bento Grid layout for dashboard stats area
+- Restructured stats from flat 4-column grid to Bento Grid with project info card (col-span-2 row-span-2) + 4 smaller stat cards
+- SVG CircularProgress now uses linearGradient from #06B6D4 to #3B82F6 instead of green-500
+- Running status Badge uses brand gradient background
+- Project name increased to text-2xl
+- Kanban "进行中" column dot changed from bg-blue-500 to bg-cyan-500
+- All stat cards now have card-glow hover effect
+- Files changed:
+  - dashboard/src/app/(dashboard)/dashboard/page.tsx (Bento Grid layout, SVG gradient, status badge, project info card)
+  - dashboard/src/components/kanban-board.tsx (inProgress column dot color)
+- **Learnings for future iterations:**
+  - SVG linearGradient requires `<defs>` section and stroke="url(#gradientId)" to apply gradient to strokes
+  - Bento Grid works well with grid-cols-4 + col-span-2 row-span-2 for the hero card, auto-flows the rest
+  - Moving project info + status badge into the Bento grid hero card creates a cleaner page header
+  - `card-glow` class from globals.css works on any Card component via className prop
 ---

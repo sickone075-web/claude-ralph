@@ -16,10 +16,10 @@ import type { RalphStatus } from "@/lib/store";
 import type { Story } from "@/lib/types";
 
 const statusBadge: Record<RalphStatus, { className: string; label: string }> = {
-  idle: { className: "bg-zinc-700 text-zinc-300", label: "Idle" },
-  running: { className: "bg-green-900 text-green-300", label: "Running" },
-  completed: { className: "bg-blue-900 text-blue-300", label: "Completed" },
-  error: { className: "bg-red-900 text-red-300", label: "Error" },
+  idle: { className: "bg-zinc-700 text-zinc-300", label: "空闲" },
+  running: { className: "bg-gradient-to-r from-cyan-500 to-blue-500 text-white", label: "运行中" },
+  completed: { className: "bg-blue-900 text-blue-300", label: "已完成" },
+  error: { className: "bg-red-900 text-red-300", label: "错误" },
 };
 
 function CircularProgress({ percent }: { percent: number }) {
@@ -30,6 +30,12 @@ function CircularProgress({ percent }: { percent: number }) {
   return (
     <div className="relative h-16 w-16">
       <svg className="h-16 w-16 -rotate-90" viewBox="0 0 64 64">
+        <defs>
+          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#06B6D4" />
+            <stop offset="100%" stopColor="#3B82F6" />
+          </linearGradient>
+        </defs>
         <circle
           cx="32"
           cy="32"
@@ -44,12 +50,12 @@ function CircularProgress({ percent }: { percent: number }) {
           cy="32"
           r={radius}
           fill="none"
-          stroke="currentColor"
+          stroke="url(#progressGradient)"
           strokeWidth="4"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          className="text-green-500 transition-all duration-500"
+          className="transition-all duration-500"
         />
       </svg>
       <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-zinc-200">
@@ -103,74 +109,97 @@ export default function DashboardPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Info Bar */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
-          <LayoutDashboard className="h-5 w-5 text-zinc-400" />
-          <div>
-            <h1 className="text-xl font-semibold text-zinc-100">
-              {prd?.project ?? "Loading..."}
-            </h1>
-            {prd?.description && (
-              <p className="text-sm text-zinc-500 mt-0.5 max-w-xl line-clamp-1">
-                {prd.description}
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          {prd?.branchName && (
-            <Badge
-              variant="outline"
-              className="font-mono text-xs border-zinc-700 text-zinc-400"
-            >
-              <GitBranch className="h-3 w-3 mr-1" />
-              {prd.branchName}
-            </Badge>
-          )}
-          <Badge className={badge.className}>
-            {ralphStatus === "running" && totalIterations > 0
-              ? `${badge.label} (${iteration}/${totalIterations})`
-              : badge.label}
-          </Badge>
-        </div>
+      {/* Page Header */}
+      <div className="flex items-center gap-3">
+        <LayoutDashboard className="h-5 w-5 text-zinc-400" />
+        <h1 className="text-2xl font-semibold text-zinc-100">
+          仪表盘
+        </h1>
       </div>
 
-      {/* Stats Row */}
+      {/* Stats - Bento Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-zinc-900 border-zinc-800">
+        {/* Project Info Card - spans 2 cols and 2 rows */}
+        <Card className="bg-zinc-900 border-zinc-800 card-glow col-span-2 row-span-2">
+          <CardContent className="flex flex-col justify-between h-full p-5">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <LayoutDashboard className="h-5 w-5 text-cyan-500" />
+                <Badge className={badge.className}>
+                  {ralphStatus === "running" && totalIterations > 0
+                    ? `${badge.label} (${iteration}/${totalIterations})`
+                    : badge.label}
+                </Badge>
+              </div>
+              <h2 className="text-2xl font-bold text-zinc-100 mb-1">
+                {prd?.project ?? "加载中..."}
+              </h2>
+              {prd?.description && (
+                <p className="text-sm text-zinc-500 line-clamp-2">
+                  {prd.description}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-4 mt-4">
+              <CircularProgress percent={percent} />
+              <div>
+                <p className="text-sm font-medium text-zinc-300">完成进度</p>
+                <p className="text-xs text-zinc-500">
+                  {completedCount} / {total} 个故事
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Right side - 4 stat cards */}
+        <Card className="bg-zinc-900 border-zinc-800 card-glow">
           <CardContent className="flex items-center gap-3 p-4">
             <ListTodo className="h-5 w-5 text-zinc-400" />
             <div>
               <p className="text-2xl font-bold text-zinc-100">{total}</p>
-              <p className="text-xs text-zinc-500">Total Stories</p>
+              <p className="text-xs text-zinc-500">总故事数</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-zinc-900 border-zinc-800 card-glow">
           <CardContent className="flex items-center gap-3 p-4">
             <CheckCircle2 className="h-5 w-5 text-green-500" />
             <div>
               <p className="text-2xl font-bold text-zinc-100">{completedCount}</p>
-              <p className="text-xs text-zinc-500">Completed</p>
+              <p className="text-xs text-zinc-500">已完成</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-zinc-900 border-zinc-800 card-glow">
           <CardContent className="flex items-center gap-3 p-4">
             <Clock className="h-5 w-5 text-amber-500" />
             <div>
               <p className="text-2xl font-bold text-zinc-100">{pendingCount}</p>
-              <p className="text-xs text-zinc-500">Pending</p>
+              <p className="text-xs text-zinc-500">待处理</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-zinc-900 border-zinc-800 card-glow">
           <CardContent className="flex items-center gap-3 p-4">
-            <CircularProgress percent={percent} />
-            <div>
-              <p className="text-xs text-zinc-500">Completion</p>
-            </div>
+            {prd?.branchName && (
+              <>
+                <GitBranch className="h-5 w-5 text-zinc-400" />
+                <div>
+                  <p className="text-sm font-mono font-bold text-zinc-100 truncate">{prd.branchName}</p>
+                  <p className="text-xs text-zinc-500">当前分支</p>
+                </div>
+              </>
+            )}
+            {!prd?.branchName && (
+              <>
+                <GitBranch className="h-5 w-5 text-zinc-400" />
+                <div>
+                  <p className="text-sm font-mono font-bold text-zinc-500">—</p>
+                  <p className="text-xs text-zinc-500">当前分支</p>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

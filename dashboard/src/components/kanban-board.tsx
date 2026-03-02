@@ -40,9 +40,9 @@ function categorizeStories(
 }
 
 const columnConfig = [
-  { id: "pending", title: "Pending", color: "text-amber-500", dot: "bg-amber-500" },
-  { id: "inProgress", title: "In Progress", color: "text-blue-500", dot: "bg-blue-500" },
-  { id: "completed", title: "Completed", color: "text-green-500", dot: "bg-green-500" },
+  { id: "pending", title: "待处理", color: "text-amber-500", dot: "bg-amber-500" },
+  { id: "inProgress", title: "进行中", color: "text-cyan-500", dot: "bg-cyan-500" },
+  { id: "completed", title: "已完成", color: "text-green-500", dot: "bg-green-500" },
 ] as const;
 
 export function KanbanBoard({
