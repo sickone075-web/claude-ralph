@@ -54,3 +54,15 @@ Started: Tue Mar  3 11:21:16     2026
   - Custom node components need `"use client"` directive
   - SVG gradient IDs must be unique across nodes (used `startNodeProgressGradient` to avoid conflicts)
 ---
+
+## 2026-03-03 - US-004
+- What was implemented: Created `dashboard/src/components/flow/story-node.tsx` — a ReactFlow custom node for individual User Stories. Displays Story ID, title, status icon with color-coded borders (pending=zinc-800, running=cyan-500+pulse-glow, completed=green-500+check, failed=red-500+X). Running nodes show a live timer; completed nodes show elapsed duration. Added `pulse-glow` CSS keyframe animation in globals.css.
+- Files changed:
+  - dashboard/src/components/flow/story-node.tsx (new component)
+  - dashboard/src/app/globals.css (added @keyframes pulse-glow and .animate-pulse-glow)
+- **Learnings for future iterations:**
+  - Duration formatting helper `formatDuration` uses simple threshold: <60s shows seconds only, >=60s shows Xm Ys
+  - Running timer uses `setInterval` at 1s with cleanup in `useEffect` — standard pattern for real-time counters
+  - `tabular-nums` class ensures timer digits don't shift layout during updates
+  - Node width is fixed at 280px per PRD spec; has both top (target) and bottom (source) Handles
+---
