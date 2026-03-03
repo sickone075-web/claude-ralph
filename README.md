@@ -1,80 +1,98 @@
-# Ralph 中文优化版
+# Claude Ralph
 
 ![Ralph](ralph.webp)
 
 > 基于 [snarktank/ralph](https://github.com/snarktank/ralph) 的中文优化版本，感谢原作者 [Ryan Carson](https://x.com/ryancarson) 和 [Geoffrey Huntley 的 Ralph 模式](https://ghuntley.com/ralph/)。
 
-Ralph 是一个自主 AI agent 循环系统，重复运行 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 直到所有 PRD 条目完成。每次迭代都是一个全新的实例，上下文完全清空。记忆通过 git 历史、`progress.txt` 和 `prd.json` 持久化。
+Ralph 是一个自主 AI agent 循环系统，为 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 提供全局安装的管理工具和可视化 Web 控制台。它重复运行 Claude Code 直到所有 PRD 条目完成，每次迭代都是全新实例，记忆通过 git 历史、`progress.txt` 和 `prd.json` 持久化。
 
-## 中文版增强特性
+## 特性
 
-相比原版，本版本做了以下优化：
+- **一键安装** — `npm install -g claude-ralph && ralph init`
+- **交互式引导** — 权限确认、环境检测、Git Bash 路径、飞书 Webhook、运行参数
+- **Web 控制台** — 需求看板、自动化任务启停、终端、日志、归档、设置
+- **多项目管理** — 侧边栏下拉切换，CLI 和 Web 均可添加项目
+- **API 容错** — 超时保护、输出有效性检查、自动重试、飞书通知
+- **全中文** — PRD、进度报告、验收标准、CLI 提示全部中文
+- **Claude Code 插件** — `/prd` 生成需求文档、`/ralph` 转换为任务格式
 
-| 特性 | 原版 | 中文优化版 |
-|------|------|-----------|
-| 输出语言 | 英文 | 全中文（PRD、进度报告、验收标准） |
-| 需求收集 | 文本输入 "1A, 2C, 3B" | `AskUserQuestion` 交互式选择（空格勾选，回车提交） |
-| 头脑风暴 | 无 | 自动调用 `brainstorming` skill 进行创意发散 |
-| 需求讨论 | 无 | 强制多轮需求讨论，确认边界情况和技术影响 |
-| PRD 流程 | 提问 → 生成 | 头脑风暴 → 交互式澄清 → 需求讨论 → 生成 |
+## 快速开始
 
-## 前置条件
+### 安装
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 已安装并认证（`npm install -g @anthropic-ai/claude-code`）
-- `jq` 已安装（macOS: `brew install jq`，Windows: `choco install jq`）
-- 项目已初始化 git 仓库
+```bash
+npm install -g claude-ralph
+```
 
-## 安装
+### 初始化
 
-### 方式一：Claude Code Marketplace（推荐）
+```bash
+ralph init
+```
+
+交互式引导会帮你完成：
+1. 权限声明与确认
+2. 环境检测（Node.js、Claude CLI）
+3. Windows Git Bash 路径配置
+4. 飞书 Webhook 通知（可选）
+5. 默认运行参数
+6. 首个项目配置
+7. Claude Code 插件安装引导
+
+### 启动 Web 控制台
+
+```bash
+ralph start
+```
+
+自动打开浏览器访问 `http://localhost:3000`，提供：
+- 需求任务看板（拖拽管理）
+- 启动/停止 Ralph 自动化循环
+- 实时终端和日志
+- 归档历史查看
+- 在线配置管理
+
+### 安装 Claude Code 插件
 
 在 Claude Code 中执行：
 
 ```bash
-/plugin marketplace add sickone075-web/ralph-zh
-/plugin install ralph-zh-skills@ralph-zh-marketplace
+/install-plugin marketplace add sickone075-web/ralph-zh
 ```
 
 安装后可用的 skill：
-- `/prd` - 生成产品需求文档（含头脑风暴和需求讨论）
-- `/ralph` - 将 PRD 转换为 prd.json 格式
+- `/prd` — 生成产品需求文档（含头脑风暴和需求讨论）
+- `/ralph` — 将 PRD 转换为 prd.json 任务格式
 
-更新到最新版：
+## CLI 命令
 
-```bash
-/plugin update ralph-zh-skills@ralph-zh-marketplace
-```
+| 命令 | 说明 |
+|------|------|
+| `ralph init` | 交互式初始化引导 |
+| `ralph start` | 启动 Web 控制台（端口 3000 + 3001） |
+| `ralph start --no-open` | 启动但不自动打开浏览器 |
+| `ralph stop` | 停止 Web 控制台 |
+| `ralph add-project` | 交互式添加项目 |
+| `ralph config <key> <value>` | 修改配置 |
+| `ralph --version` | 查看版本 |
 
-### 方式二：手动复制 skill
-
-```bash
-cp -r skills/prd ~/.claude/skills/
-cp -r skills/ralph ~/.claude/skills/
-```
-
-### 方式三：复制到项目中
-
-```bash
-# 在项目根目录执行
-mkdir -p scripts/ralph
-cp /path/to/ralph-zh/ralph.sh scripts/ralph/
-cp /path/to/ralph-zh/CLAUDE.md scripts/ralph/CLAUDE.md
-chmod +x scripts/ralph/ralph.sh
-```
+**注意：** `ralph` 是管理工具，不是 AI 对话工具。与 AI 的所有对话在 Claude Code 中进行。
 
 ## 工作流程
 
 ### 1. 创建 PRD
+
+在 Claude Code 中：
 
 ```
 加载 prd skill，为 [你的功能描述] 创建 PRD
 ```
 
 流程会自动经历：
-1. **头脑风暴** - 调用 brainstorming skill 或自行发散思考
-2. **交互式澄清** - 通过可选择的问题收集关键信息
-3. **需求讨论** - 深入确认细节、边界情况、技术影响
-4. **生成 PRD** - 输出到 `tasks/prd-[feature-name].md`
+1. **头脑风暴** — 调用 brainstorming skill 进行创意发散
+2. **交互式澄清** — 通过可选择的问题收集关键信息
+3. **需求讨论** — 深入确认细节、边界情况、技术影响
+4. **生成 PRD** — 输出到 `tasks/prd-[feature-name].md`
 
 ### 2. 转换为 Ralph 格式
 
@@ -82,51 +100,80 @@ chmod +x scripts/ralph/ralph.sh
 加载 ralph skill，将 tasks/prd-[feature-name].md 转换为 prd.json
 ```
 
-生成的 `prd.json` 中所有标题、描述、验收标准均为中文。
-
 ### 3. 运行 Ralph
 
-```bash
-./scripts/ralph/ralph.sh --tool claude [最大迭代次数]
-```
-
-默认 10 次迭代。Ralph 会：
-1. 创建功能分支（来自 PRD 的 `branchName`）
-2. 选择优先级最高的 `passes: false` 用户故事
-3. 实现该故事
-4. 运行质量检查（typecheck、lint、test）
-5. 检查通过后提交代码
-6. 更新 `prd.json` 标记故事为 `passes: true`
-7. 将经验追加到 `progress.txt`
-8. 重复直到所有故事完成或达到最大迭代次数
-
-## 关键文件
-
-| 文件 | 用途 |
-|------|------|
-| `ralph.sh` | Bash 循环脚本，每次启动全新的 AI 实例 |
-| `CLAUDE.md` | Claude Code 实例的执行指令（中文） |
-| `prd.json` | 用户故事及其完成状态（任务列表） |
-| `prd.json.example` | PRD 格式示例 |
-| `progress.txt` | 追加式经验日志，供后续迭代参考 |
-| `skills/prd/` | PRD 生成 skill（中文，含头脑风暴和需求讨论） |
-| `skills/ralph/` | PRD 转 JSON skill（中文） |
-| `.claude-plugin/` | Claude Code Marketplace 插件清单 |
-| `flowchart/` | Ralph 工作流程的交互式可视化 |
-
-## 流程图
-
-[![Ralph Flowchart](ralph-flowchart.png)](https://snarktank.github.io/ralph/)
-
-**[查看交互式流程图](https://snarktank.github.io/ralph/)** - 点击可逐步查看带动画的流程。
-
-本地运行：
+通过 Web 控制台点击启动，或直接命令行：
 
 ```bash
-cd flowchart
-npm install
-npm run dev
+./scripts/ralph/ralph.sh --tool claude --timeout 30 --webhook <飞书URL> 10
 ```
+
+Ralph 会循环执行：
+1. 创建功能分支
+2. 选择优先级最高的未完成用户故事
+3. 实现该故事并运行质量检查
+4. 提交代码，标记故事为 `passes: true`
+5. 将经验追加到 `progress.txt`
+6. 重复直到所有故事完成
+
+## 项目结构
+
+```
+claude-ralph/
+├── src/                      # CLI 源码（TypeScript）
+│   ├── bin/ralph.ts           # CLI 入口
+│   ├── commands/              # 子命令（init, start, stop, config, add-project）
+│   └── lib/global-config.ts   # 全局配置读写
+├── dashboard/                 # Web 控制台（Next.js 16）
+│   ├── server/ws.ts           # WebSocket 实时更新
+│   └── src/
+│       ├── app/               # 6 个页面 + 14 个 API 路由
+│       ├── components/        # 业务组件 + shadcn/ui
+│       └── lib/               # 配置、状态、类型
+├── scripts/ralph/             # 核心脚本
+│   ├── ralph.sh               # 主循环（含 API 容错）
+│   └── CLAUDE.md              # Claude Code 实例指令
+├── skills/                    # Claude Code 插件技能
+│   ├── prd/SKILL.md           # PRD 生成
+│   └── ralph/SKILL.md         # PRD 转 JSON
+├── flowchart/                 # 流程图可视化（Vite）
+└── .claude-plugin/            # Claude Code Marketplace 配置
+```
+
+## 配置
+
+所有配置统一存储在 `~/.ralph/config.json`，CLI 和 Web 控制台共享：
+
+```json
+{
+  "defaultTool": "claude",
+  "defaultMaxIterations": 10,
+  "timeoutMinutes": 30,
+  "maxConsecutiveFailures": 5,
+  "retryIntervalSeconds": 3600,
+  "webhookUrl": "",
+  "gitBashPath": "",
+  "port": 3000,
+  "wsPort": 3001,
+  "terminalFontSize": 14,
+  "autoOpenBrowser": true,
+  "activeProject": "",
+  "projects": []
+}
+```
+
+Web 控制台设置页可在线修改所有配置，包括飞书 Webhook 测试、超时参数、环境配置等。
+
+## API 容错机制
+
+ralph.sh 内置以下容错能力：
+
+- **超时保护** — 单次迭代超时自动终止（默认 30 分钟）
+- **输出有效性检查** — 检测 API 错误标识（rate limit、503、overloaded 等）
+- **自动重试** — 失败后等待后重试同一迭代，不消耗迭代次数
+- **连续失败停机** — 达到上限后发送飞书通知并停机（默认 5 次）
+- **飞书通知** — 失败、停机、完成时发送富文本卡片通知
+- **本地日志** — 所有事件写入 `ralph.log`
 
 ## 核心概念
 
@@ -139,70 +186,41 @@ npm run dev
 
 ### 任务要小
 
-每个 PRD 条目应小到能在一个上下文窗口内完成。如果任务太大，LLM 会在完成前耗尽上下文，产出质量低下的代码。
+每个用户故事应小到能在一个上下文窗口内完成。如果任务太大，LLM 会在完成前耗尽上下文。
 
-合适大小：
-- 添加数据库列和迁移
-- 在现有页面上添加 UI 组件
-- 用新逻辑更新服务端 action
-- 添加列表筛选下拉框
+合适大小：添加数据库列、UI 组件、服务端逻辑、筛选功能
 
-太大（需拆分）：
-- "构建整个仪表板"
-- "添加认证"
-- "重构 API"
-
-### CLAUDE.md 更新至关重要
-
-每次迭代后，Ralph 会将发现的模式更新到相关的 `CLAUDE.md` 文件中。这很关键，因为 Claude Code 会自动读取这些文件，后续迭代（和人类开发者）可以从中受益。
-
-### 反馈循环
-
-Ralph 依赖反馈循环才能正常工作：
-- 类型检查捕获类型错误
-- 测试验证行为
-- CI 必须保持绿色（坏代码会跨迭代累积）
-
-### 浏览器验证
-
-涉及 UI 的故事必须在验收标准中包含"使用 dev-browser skill 在浏览器中验证"。Ralph 会使用该 skill 导航到页面、与 UI 交互并确认变更有效。
+太大（需拆分）：构建整个仪表板、添加认证、重构 API
 
 ### 停止条件
 
 当所有故事的 `passes` 为 `true` 时，Ralph 输出 `<promise>COMPLETE</promise>` 并退出循环。
 
-## 调试
+## 流程图
 
-检查当前状态：
+[![Ralph Flowchart](ralph-flowchart.png)](https://snarktank.github.io/ralph/)
+
+**[查看交互式流程图](https://snarktank.github.io/ralph/)** — 点击可逐步查看带动画的流程。
+
+本地运行：
 
 ```bash
-# 查看哪些故事已完成
-cat prd.json | jq '.userStories[] | {id, title, passes}'
-
-# 查看前序迭代的经验
-cat progress.txt
-
-# 查看 git 历史
-git log --oneline -10
+cd flowchart && npm install && npm run dev
 ```
 
-## 自定义提示
+## 前置条件
 
-将 `CLAUDE.md` 复制到你的项目后，可以根据项目定制：
-- 添加项目特定的质量检查命令
-- 包含代码库约定
-- 添加常见的技术栈注意事项
-
-## 归档
-
-Ralph 在启动新功能（不同的 `branchName`）时会自动归档上一次运行。归档保存到 `archive/YYYY-MM-DD-feature-name/`。
+- Node.js >= 18
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 已安装（`npm install -g @anthropic-ai/claude-code`）
+- `jq` 已安装（可选，用于 ralph.sh 读取配置文件）
+- Git
 
 ## 参考
 
-- [原版 Ralph（snarktank/ralph）](https://github.com/snarktank/ralph) - 本项目基于此优化
+- [原版 Ralph（snarktank/ralph）](https://github.com/snarktank/ralph) — 本项目基于此优化
 - [Geoffrey Huntley 的 Ralph 文章](https://ghuntley.com/ralph/)
 - [Claude Code 文档](https://docs.anthropic.com/en/docs/claude-code)
 
 ## 许可证
 
-[MIT](LICENSE) - 与原版一致
+[MIT](LICENSE)
