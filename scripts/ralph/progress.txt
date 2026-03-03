@@ -105,3 +105,14 @@ Started: Tue Mar  3 11:21:16     2026
   - StoryFlow wraps ReactFlow + StoryDetailPanel in a Fragment (`<>...</>`) since both need to be siblings
   - `readOnly` prop passed through to panel for archive viewing mode
 ---
+
+## 2026-03-03 - US-008
+- What was implemented: Created `dashboard/src/components/flow/archive-switcher.tsx` — a dropdown selector using shadcn/ui Select component that lets users switch between the live project and historical archives. Fetches archive list from `/api/archives` on mount, displays each archive with feature name, date, and completion percentage. Selecting an archive fetches detail from `/api/archives/:folder` and passes stories to parent via callback. Has loading spinner during fetch. Defaults to "当前任务" with cyan Radio icon.
+- Files changed:
+  - dashboard/src/components/flow/archive-switcher.tsx (new component)
+- **Learnings for future iterations:**
+  - ArchiveSwitcher is a controlled component with `onArchiveSelect` and `onCurrentSelect` callbacks — parent decides what to do with the data
+  - Select component from shadcn/ui uses Radix primitives, supports groups/separators/labels for structured dropdowns
+  - Archive data types (`ArchiveItem`, `ArchiveDetail`) are already in `lib/types.ts`
+  - `__current__` sentinel value distinguishes live project from archive folders in select state
+---
