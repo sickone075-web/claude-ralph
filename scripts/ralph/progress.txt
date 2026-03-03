@@ -92,3 +92,16 @@ Started: Tue Mar  3 11:21:16     2026
   - `onStoryNodeClick` callback filters for storyNode type only (start/end nodes don't trigger)
   - `proOptions={{ hideAttribution: true }}` removes ReactFlow watermark
 ---
+
+## 2026-03-03 - US-007
+- What was implemented: Created `dashboard/src/components/flow/story-detail-panel.tsx` — a right-side slide-in detail panel using shadcn/ui Sheet component. Displays Story ID, title, description, acceptance criteria with check/circle icons, priority badge, time info (start/end/duration), and notes. Integrated into `story-flow.tsx` with useState for selected story and panel open state; clicking a storyNode opens the panel.
+- Files changed:
+  - dashboard/src/components/flow/story-detail-panel.tsx (new component)
+  - dashboard/src/components/flow/story-flow.tsx (added state + StoryDetailPanel integration)
+- **Learnings for future iterations:**
+  - shadcn/ui Sheet component already exists at `dashboard/src/components/ui/sheet.tsx`
+  - Sheet uses Radix Dialog primitive (`radix-ui`) under the hood
+  - Panel state (selectedStory + panelOpen) lives in StoryFlow, not in the panel itself — keeps panel stateless/controlled
+  - StoryFlow wraps ReactFlow + StoryDetailPanel in a Fragment (`<>...</>`) since both need to be siblings
+  - `readOnly` prop passed through to panel for archive viewing mode
+---
