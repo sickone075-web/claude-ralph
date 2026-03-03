@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { LayoutDashboard } from "lucide-react";
 import { ArchiveSwitcher } from "@/components/flow/archive-switcher";
 import { StoryFlow } from "@/components/flow/story-flow";
+import { RepoOverviewCards } from "@/components/repo-overview-cards";
 import { useDashboardStore } from "@/lib/store";
 import type { Story } from "@/lib/types";
 
@@ -93,6 +94,9 @@ export default function DashboardPage() {
           onCurrentSelect={handleCurrentSelect}
         />
       </div>
+
+      {/* Repo Overview Cards (multi-repo only) */}
+      <RepoOverviewCards />
 
       {/* Full-screen Flow Canvas */}
       <div className="flex-1 min-h-0">
