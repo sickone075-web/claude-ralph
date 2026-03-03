@@ -116,3 +116,14 @@ Started: Tue Mar  3 11:21:16     2026
   - Archive data types (`ArchiveItem`, `ArchiveDetail`) are already in `lib/types.ts`
   - `__current__` sentinel value distinguishes live project from archive folders in select state
 ---
+
+## 2026-03-03 - US-009
+- What was implemented: Refactored Dashboard page to replace KanbanBoard + stats bento grid with ArchiveSwitcher + full-screen StoryFlow canvas. Header shows title + archive switcher side-by-side. Flow canvas fills remaining viewport height via `flex-1 min-h-0`. Archive state managed with useState — selecting an archive switches StoryFlow to readOnly mode with archive stories; switching back restores live WebSocket updates. Loading skeleton adapted to show flow-like placeholders (start node + story nodes + end node shapes).
+- Files changed:
+  - dashboard/src/app/(dashboard)/dashboard/page.tsx (major rewrite: removed KanbanBoard/stats, added ArchiveSwitcher + StoryFlow)
+- **Learnings for future iterations:**
+  - KanbanBoard component file preserved — it's still used by Stories page and archive page
+  - Dashboard layout uses `flex h-screen` with `main flex-1 overflow-auto`, so child pages can use `h-full` + `flex-1 min-h-0` for full-height content
+  - Archive viewing state is local to the page (useState), not in the zustand store — keeps store focused on real-time data
+  - When `isViewingArchive`, pass `ralphStatus="idle"` and `readOnly=true` to StoryFlow to suppress animations
+---
