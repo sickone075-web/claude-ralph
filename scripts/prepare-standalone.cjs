@@ -61,3 +61,31 @@ if (fs.existsSync(serverJsPath)) {
   fs.writeFileSync(serverJsPath, serverJs);
   console.log('[ralph] Standalone server.js: hardcoded paths fixed.');
 }
+
+// Copy .next/static/ and public/ into standalone directory
+// Next.js standalone mode requires these to be present alongside server.js
+const dashboardDir = path.join(__dirname, '..', 'dashboard');
+
+function copyDirSync(src, dest) {
+  if (!fs.existsSync(src)) return;
+  fs.mkdirSync(dest, { recursive: true });
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirSync(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+const staticSrc = path.join(dashboardDir, '.next', 'static');
+const staticDest = path.join(standaloneDir, '.next', 'static');
+copyDirSync(staticSrc, staticDest);
+console.log('[ralph] Copied .next/static/ into standalone.');
+
+const publicSrc = path.join(dashboardDir, 'public');
+const publicDest = path.join(standaloneDir, 'public');
+copyDirSync(publicSrc, publicDest);
+console.log('[ralph] Copied public/ into standalone.');
