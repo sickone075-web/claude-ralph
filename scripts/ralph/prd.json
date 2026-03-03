@@ -1,261 +1,104 @@
 {
   "project": "claude-ralph",
-  "branchName": "ralph/multi-repo-support",
-  "description": "多仓库支持 — 项目模型从一个项目一个仓库升级为一个项目多个仓库，支持前后端分离、文档仓库契约优先、统一编排执行",
+  "branchName": "ralph/unified-start-flow",
+  "description": "启动流程统一化 — 将启停入口统一为 Claude Code Skill（/ralph-start 和 /ralph-stop），Web Dashboard 改为纯状态监控 + 全局配置管理，通过 PID 文件管理进程生命周期",
   "userStories": [
     {
       "id": "US-001",
-      "title": "扩展全局配置支持多仓库",
-      "description": "作为 Ralph 用户，我希望在全局配置中为项目配置多个仓库及其类型和执行优先级，以便系统知道项目的仓库组成。",
+      "title": "ralph.sh PID 文件管理",
+      "description": "作为开发者，我需要 ralph.sh 在启动和退出时管理 PID 文件，以便外部程序（Skill、Dashboard）能检测其运行状态。",
       "acceptanceCriteria": [
-        "src/lib/global-config.ts 的 ProjectConfig 接口新增可选 repositories 字段：Record<string, RepoConfig>",
-        "RepoConfig 接口包含：path（string，绝对路径）、type（'docs'|'backend'|'frontend'|'app'|'other'）、priority（number，默认 1）、checks（string[]，可选）",
-        "dashboard/src/lib/config.ts 同步更新 ProjectConfig 和新增 RepoConfig 类型",
-        "dashboard/src/lib/types.ts 中 PRD 接口和 Story 接口无需此步修改",
-        "不配置 repositories 的项目行为与现在完全一致",
-        "类型检查通过（npm run build 在项目根目录执行）"
+        "ralph.sh 启动时将自身 PID 写入 scripts/ralph/.ralph-pid",
+        "使用 trap cleanup EXIT 确保正常退出（exit 0/1/2）和信号终止时删除 .ralph-pid 文件",
+        "ralph.sh 启动时若 .ralph-pid 已存在，检查对应进程是否仍在运行（kill -0）；若已死亡则覆盖，若仍在运行则报错退出",
+        ".ralph-pid 加入 .gitignore"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "这是基础类型变更，所有后续故事依赖此故事。RepoConfig 的 type 字段用于语义化展示，priority 字段用于执行顺序控制。"
+      "notes": "此故事为 shell 脚本修改，无 TypeScript 类型检查。使用 kill -0 $pid 检测进程存活。"
     },
     {
       "id": "US-002",
-      "title": "ralph add-repo 命令",
-      "description": "作为 Ralph 用户，我希望通过 CLI 命令为当前活跃项目添加仓库配置，而不必手动编辑 JSON。",
+      "title": "创建 /ralph-start Skill",
+      "description": "作为用户，我希望在 Claude Code 中输入 /ralph-start 即可启动 Ralph 循环，以便不需要记住脚本路径和参数。",
       "acceptanceCriteria": [
-        "新建 src/commands/add-repo.ts",
-        "在 src/bin/ralph.ts 中注册 add-repo 命令",
-        "交互式输入：仓库名称（不能与已有重复）、绝对路径（校验路径存在）、类型（列表选择：docs/backend/frontend/app/other）、执行优先级（数字输入，docs 默认 0，其他默认 1）、checks 命令（可选，逗号分隔）",
-        "仓库添加到当前活跃项目的 repositories 中",
-        "如果活跃项目尚无 repositories 字段，自动创建空对象再添加",
-        "如果没有活跃项目，提示先运行 ralph init 或 ralph add-project",
-        "添加成功后显示确认信息",
-        "类型检查通过"
+        "创建 skills/start/SKILL.md，skill name 为 ralph-start，user-invocable: true",
+        "Skill 指导 Claude Code 读取 ~/.ralph/config.json 获取全局默认参数（defaultTool、defaultMaxIterations、timeoutMinutes、webhookUrl）",
+        "支持可选参数覆盖（如 /ralph-start --tool amp --iterations 5）",
+        "读取当前项目 scripts/ralph/prd.json 统计待完成 story 数量",
+        "检查 .ralph-pid 文件判断是否已有实例运行，已运行则提示当前状态并退出",
+        "如果无待完成 story（全部 passes: true），提示所有任务已完成并退出",
+        "启动前打印摘要：工具、迭代次数、超时时间、待完成 story 数/总数",
+        "后台执行 bash scripts/ralph/ralph.sh --tool X --timeout Y --webhook Z N",
+        "返回 Ralph 已启动 结果"
       ],
       "priority": 2,
       "passes": true,
-      "notes": "参考 src/commands/add-project.ts 的实现模式。"
+      "notes": "Skill 是 markdown 指令文件，指导 Claude Code 使用 Bash 工具和 Read 工具完成流程。后台执行使用 Bash 工具的 run_in_background。"
     },
     {
       "id": "US-003",
-      "title": "ralph remove-repo 命令",
-      "description": "作为 Ralph 用户，我希望能删除项目中不再需要的仓库配置。",
+      "title": "创建 /ralph-stop Skill",
+      "description": "作为用户，我希望在 Claude Code 中输入 /ralph-stop 即可停止正在运行的 Ralph，以便快速中断循环。",
       "acceptanceCriteria": [
-        "新建 src/commands/remove-repo.ts",
-        "在 src/bin/ralph.ts 中注册 remove-repo 命令",
-        "列出当前活跃项目的所有仓库名称供选择（如果无仓库则提示并退出）",
-        "选择后显示仓库详情并要求确认删除",
-        "从 repositories 中移除选中的仓库",
-        "如果删除后 repositories 为空对象，移除整个 repositories 字段",
-        "类型检查通过"
+        "创建 skills/stop/SKILL.md，skill name 为 ralph-stop，user-invocable: true",
+        "Skill 指导 Claude Code 读取 scripts/ralph/.ralph-pid 文件",
+        "如果文件不存在或进程已死亡，提示 Ralph 当前未运行",
+        "如果进程存在，执行 kill 终止进程树（Windows 使用 taskkill /pid X /t /f）",
+        "确认进程已终止并清理 .ralph-pid 文件",
+        "返回 Ralph 已停止 结果"
       ],
       "priority": 3,
       "passes": true,
-      "notes": ""
+      "notes": "Skill 是 markdown 指令文件。需兼容 Windows（taskkill）和 Unix（kill）。"
     },
     {
       "id": "US-004",
-      "title": "ralph init 向导支持配置多仓库",
-      "description": "作为 Ralph 用户，我希望在 ralph init 初始化向导中配置项目的多个仓库。",
+      "title": "Terminal 页面改为纯监控模式",
+      "description": "作为用户，我希望 Dashboard Terminal 页面只展示运行状态和日志输出，不提供启停操作，以便职责清晰。",
       "acceptanceCriteria": [
-        "在 src/commands/init.ts 的 stepFirstProject 之后新增 stepRepositories 步骤",
-        "询问'是否为多仓库项目？'，默认否",
-        "如果是，循环添加仓库：名称、绝对路径（校验存在）、类型（列表选择）、优先级（数字）、checks（可选逗号分隔）",
-        "每添加一个仓库后询问'继续添加？'",
-        "完成后仓库列表写入项目的 repositories 字段",
-        "stepCompletion 的配置摘要中展示仓库列表（名称、类型、路径）",
-        "如果选否或跳过，不添加 repositories 字段",
-        "类型检查通过"
+        "移除 tool 选择下拉框和 maxIterations 选择下拉框",
+        "移除启动按钮（handleStart）和停止按钮（handleStop）及其逻辑",
+        "移除相关 state：tool、maxIterations、isStarting、isStopping",
+        "移除不再需要的 import（Play、Square 等启停相关图标和 Select 组件）",
+        "更新欢迎消息：将 选择 AI 工具和最大迭代次数然后点击启动 改为 在 Claude Code 中使用 /ralph-start 启动循环",
+        "保留：状态 badge、迭代进度、运行时间、WebSocket 连接状态、实时终端输出、迭代历史 Tab、工具栏、完成摘要",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 4,
       "passes": true,
-      "notes": "在 stepPluginGuide 之前插入此步骤。复用 add-repo 的输入逻辑但内联到 init 流程中。"
+      "notes": "文件：dashboard/src/app/(dashboard)/terminal/page.tsx。只做减法，不添加新功能。"
     },
     {
       "id": "US-005",
-      "title": "CLAUDE-docs.md 文档仓库专用模板",
-      "description": "作为 Ralph 用户，我希望文档仓库使用专门面向文档和 API 契约编写的 agent 指令模板。",
+      "title": "Dashboard 通过 PID 文件检测运行状态",
+      "description": "作为用户，我希望无论 Ralph 是通过 Skill 还是其他方式启动的，Dashboard 都能检测到运行状态，以便实时监控。",
       "acceptanceCriteria": [
-        "新建 scripts/ralph/CLAUDE-docs.md",
-        "模板指令侧重于：产出 API 契约文档（接口路径、请求/响应格式、错误码）、技术方案文档、架构设计文档",
-        "质量检查改为文档层面：markdown 格式规范、文档结构完整性、接口描述完整",
-        "commit 消息格式改为 docs: [Story ID] - [Story Title]",
-        "保留进度报告（progress.txt）和 COMPLETE 信号机制与 CLAUDE.md 一致",
-        "保留 Codebase Patterns 机制"
+        "ralph-process.ts 新增 detectRunningFromPid() 函数，读取 .ralph-pid 文件并用 process.kill(pid, 0) 检查进程是否存活",
+        "getRalphStatus() 在内存态无进程时回退调用 detectRunningFromPid() 判断外部启动的 ralph",
+        "ws.ts 的文件监听列表增加 .ralph-pid 文件，PID 文件出现/消失时广播 ralph:status 事件",
+        "当 PID 对应的进程退出后，状态回退为 idle",
+        "类型检查通过"
       ],
       "priority": 5,
       "passes": true,
-      "notes": "基于现有 scripts/ralph/CLAUDE.md 修改而来，保持结构一致但内容面向文档。"
+      "notes": "文件：dashboard/src/lib/ralph-process.ts 和 dashboard/server/ws.ts。Windows 上 process.kill(pid, 0) 也可用于检测进程存活。"
     },
     {
       "id": "US-006",
-      "title": "ralph.sh 注入同项目仓库路径信息",
-      "description": "作为 Ralph 用户，我希望每个仓库的 agent 能自动知道同项目其他仓库的路径，以便读取文档仓库的 API 契约。",
+      "title": "Start API 支持无参数调用并传递全部参数",
+      "description": "作为 Skill 调用者，我希望 POST /api/ralph/start 支持空 body 调用，自动使用全局配置默认值，并将全部运行参数传递给 ralph.sh。",
       "acceptanceCriteria": [
-        "ralph.sh 启动时从 ~/.ralph/config.json 读取当前项目的 repositories 列表（通过 jq）",
-        "如果有 repositories 配置，生成仓库信息文本块（含仓库名、类型、路径的表格）",
-        "特别标注 type=docs 的仓库，提示 agent 可用 Read 工具读取该仓库的文件",
-        "注入方式：修改 claude 调用命令为 { cat CLAUDE.md; echo '注入内容'; } | claude --print（不修改 CLAUDE.md 文件本身）",
-        "根据当前仓库的 type 选择使用 CLAUDE.md 还是 CLAUDE-docs.md（type=docs 用 CLAUDE-docs.md）",
-        "单仓库项目（无 repositories 配置）不注入额外内容，行为不变",
-        "如果仓库根目录下有自己的 scripts/ralph/CLAUDE.md，优先使用仓库自己的模板"
+        "POST /api/ralph/start 的 body 可为空 {} 或不提供",
+        "未提供的参数从 ~/.ralph/config.json 读取默认值（defaultTool → tool，defaultMaxIterations → maxIterations）",
+        "提供的参数覆盖全局配置值",
+        "startRalph 函数传递全部运行参数给 ralph.sh（包括 --timeout 和 --webhook）",
+        "类型检查通过"
       ],
       "priority": 6,
       "passes": true,
-      "notes": "需要 ralph.sh 知道自己属于哪个项目和哪个仓库。可通过匹配当前工作目录与 config.json 中的仓库路径来判断。jq 依赖在 ralph.sh 中已有使用先例。"
-    },
-    {
-      "id": "US-007",
-      "title": "ralph run-all 统一编排命令（核心）",
-      "description": "作为 Ralph 用户，我希望有一个命令能按优先级分阶段启动多仓库的 ralph 循环。",
-      "acceptanceCriteria": [
-        "新建 src/commands/run-all.ts",
-        "在 src/bin/ralph.ts 中注册 run-all 命令",
-        "读取活跃项目的 repositories 配置",
-        "按 priority 数字排序，相同 priority 的仓库并行启动",
-        "每个仓库调用其 scripts/ralph/ralph.sh（在仓库的 path 目录下执行）",
-        "传递全局配置中的默认参数（--tool、--timeout、--webhook、maxIterations）",
-        "各仓库的日志输出添加前缀标注（如 [backend] Iteration 1 of 10）",
-        "当前 priority 阶段的所有仓库完成后，再启动下一个 priority 阶段",
-        "任一仓库失败不影响同阶段其他仓库继续执行",
-        "所有仓库完成后，汇总报告各仓库的完成状态",
-        "如果项目没有 repositories 配置，fallback 为运行项目根目录的 ralph.sh（兼容单仓库）",
-        "类型检查通过"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": "使用 child_process.spawn 管理多个并行进程。进程管理参考 src/commands/start.ts。"
-    },
-    {
-      "id": "US-008",
-      "title": "ralph run-all 支持 --repo 和 --type 筛选",
-      "description": "作为 Ralph 用户，我希望 run-all 支持只运行指定仓库或指定类型的仓库。",
-      "acceptanceCriteria": [
-        "run-all 支持 --repo <name> 参数，只运行指定名称的仓库",
-        "run-all 支持 --type <docs|backend|frontend|app|other> 参数，只运行指定类型的仓库",
-        "--repo 和 --type 可以组合使用（取交集）",
-        "指定的仓库或类型不存在时给出友好错误提示",
-        "筛选后如果没有匹配的仓库，提示并退出",
-        "类型检查通过"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": "在 US-007 的基础上添加筛选逻辑。"
-    },
-    {
-      "id": "US-009",
-      "title": "更新 /ralph skill 支持多仓库拆分输出",
-      "description": "作为 Ralph 用户，我希望 /ralph skill 能识别多仓库配置并按仓库拆分写入各仓库的 prd.json。",
-      "acceptanceCriteria": [
-        "skills/ralph/SKILL.md 更新输出格式，包含 repo 字段和 repositories 信息",
-        "Skill 指导 Claude Code 启动时读取 ~/.ralph/config.json 检查活跃项目的 repositories",
-        "如果是多仓库项目，每个 story 必须有 repo 字段指向 repositories 中的 key",
-        "转换完成后按仓库分组，分别写入各仓库的 scripts/ralph/prd.json",
-        "各仓库的 prd.json 使用统一的 project、branchName、description，但 userStories 只含该仓库的故事",
-        "写入前检查各仓库是否有旧 prd.json 需归档（branchName 不同时归档）",
-        "如果某仓库没有对应 story，不生成该仓库的 prd.json",
-        "单仓库项目行为不变（不读 repositories，直接写 scripts/ralph/prd.json）",
-        "Skill 文档包含多仓库输出格式示例"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": "这是 SKILL.md 内容的重写，指导 Claude Code 完成拆分和多文件写入。"
-    },
-    {
-      "id": "US-010",
-      "title": "更新 /prd skill 支持多仓库拆分",
-      "description": "作为 Ralph 用户，我希望 /prd skill 在需求讨论阶段能识别多仓库并在拆分 story 时标注所属仓库。",
-      "acceptanceCriteria": [
-        "skills/prd/SKILL.md 更新，在工作流第二步（初步澄清）前读取 ~/.ralph/config.json",
-        "如果活跃项目有 repositories 配置，告知用户检测到多仓库项目并展示仓库列表",
-        "PRD 用户故事章节中每个故事标注目标仓库",
-        "提示用户每个 story 只能修改一个仓库",
-        "文档类 story（API 契约等）分配给 type=docs 的仓库",
-        "单仓库项目行为不变"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": "这是 SKILL.md 的内容增强，增加多仓库感知能力。"
-    },
-    {
-      "id": "US-011",
-      "title": "更新 /ralph-start skill 适配多仓库",
-      "description": "作为 Ralph 用户，我希望 /ralph-start 能支持启动指定仓库或全部仓库的 ralph 循环。",
-      "acceptanceCriteria": [
-        "skills/start/SKILL.md 更新",
-        "/ralph-start 不带参数时检查活跃项目是否有 repositories 配置",
-        "如有多仓库，提示用户选择：启动全部（调用 ralph run-all）或启动指定仓库（--repo <name>）",
-        "支持 /ralph-start --repo backend 直接启动指定仓库",
-        "单仓库项目行为不变"
-      ],
-      "priority": 11,
-      "passes": true,
-      "notes": "依赖 US-007 的 ralph run-all 命令。"
-    },
-    {
-      "id": "US-012",
-      "title": "Dashboard 多仓库状态概览卡片",
-      "description": "作为 Ralph 用户，我希望在 Dashboard 首页看到各仓库的进度卡片。",
-      "acceptanceCriteria": [
-        "dashboard/src/lib/config.ts 的 getActiveProjectPaths 升级为支持返回多仓库路径",
-        "新增 getActiveProjectRepos() 函数，返回活跃项目的所有仓库信息（名称、路径、类型、prdPath、pidPath）",
-        "Dashboard 首页（dashboard 页面）检测是否有多仓库配置",
-        "如果是多仓库，在 Flow 视图上方展示仓库概览卡片列表",
-        "每个卡片显示：仓库名称、类型标签（Badge）、运行状态（idle/running/completed）、story 完成进度（如 2/5）",
-        "卡片数据通过读取各仓库的 prd.json 和检测 PID 文件获取",
-        "单仓库项目不显示仓库卡片，Dashboard 行为不变",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
-      ],
-      "priority": 12,
-      "passes": true,
-      "notes": "Dashboard 首页文件：dashboard/src/app/(dashboard)/dashboard/page.tsx。参考现有的 ralph-status-indicator.tsx 组件。"
-    },
-    {
-      "id": "US-013",
-      "title": "Dashboard Stories 页面仓库切换",
-      "description": "作为 Ralph 用户，我希望在 Stories 页面能切换查看不同仓库的 story 列表。",
-      "acceptanceCriteria": [
-        "Stories 页面顶部增加仓库选择器（Tabs 组件），列出所有有 prd.json 的仓库",
-        "切换仓库时读取对应仓库的 prd.json 并更新 Kanban 看板",
-        "默认选中第一个有 prd.json 的仓库",
-        "单仓库项目不显示仓库选择器，行为不变",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
-      ],
-      "priority": 13,
-      "passes": true,
-      "notes": "Stories 页面文件：dashboard/src/app/(dashboard)/stories/page.tsx。"
-    },
-    {
-      "id": "US-014",
-      "title": "WebSocket 监听多仓库文件变化",
-      "description": "作为 Ralph 用户，我希望 Dashboard 能实时响应所有仓库的 prd.json 和 PID 文件变化。",
-      "acceptanceCriteria": [
-        "dashboard/server/ws.ts 的 setupFileWatcher 升级",
-        "如果活跃项目有 repositories 配置，监听所有仓库的 prd.json、progress.txt 和 .ralph-pid 文件",
-        "广播事件携带仓库名称标识（如 prd:updated 事件 payload 中包含 repo 字段）",
-        "单仓库项目监听行为不变",
-        "类型检查通过"
-      ],
-      "priority": 14,
-      "passes": true,
-      "notes": "文件：dashboard/server/ws.ts。现有 setupFileWatcher 只监听一个项目的文件，需要扩展为监听多仓库的文件。"
-    },
-    {
-      "id": "US-015",
-      "title": "更新 prd.json.example 为多仓库示例",
-      "description": "作为 Ralph 用户，我希望看到多仓库格式的 prd.json 示例以便参考。",
-      "acceptanceCriteria": [
-        "scripts/ralph/prd.json.example 更新为多仓库格式示例",
-        "包含 repositories 配置（docs、backend、frontend 各一个）",
-        "userStories 中的故事包含 repo 字段",
-        "保留 story 的所有现有字段（id、title、description、acceptanceCriteria、priority、passes、notes）"
-      ],
-      "priority": 15,
-      "passes": true,
-      "notes": ""
+      "notes": "文件：dashboard/src/app/api/ralph/start/route.ts 和 dashboard/src/lib/ralph-process.ts。"
     }
   ]
 }

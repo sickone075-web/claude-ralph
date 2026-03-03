@@ -15,7 +15,7 @@
       "version": "1.1.0",
       "keywords": ["ralph", "prd", "中文", "brainstorming", "agent"],
       "category": "productivity",
-      "skills": "./skills/"
+      "skills": "../skills/"
     }
   ]
 }
