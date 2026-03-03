@@ -135,12 +135,10 @@ function StartNodeComponent({ data }: NodeProps & { data: StartNodeData }) {
         </div>
       )}
 
-      {/* Bottom handle for connection to story nodes */}
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500"
-      />
+      {/* Connection handles - all directions */}
+      <Handle type="source" position={Position.Bottom} id="bottom" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
+      <Handle type="source" position={Position.Right} id="right" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
+      <Handle type="source" position={Position.Left} id="left" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
     </div>
   );
 }

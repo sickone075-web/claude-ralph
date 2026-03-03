@@ -289,8 +289,8 @@ run_with_timeout() {
   local exit_code=$?
 
   # 清理超时监控进程
-  kill "$timer_pid" 2>/dev/null
-  wait "$timer_pid" 2>/dev/null
+  kill "$timer_pid" 2>/dev/null || true
+  wait "$timer_pid" 2>/dev/null || true
 
   # 判断是否因超时被 kill（信号 137=SIGKILL, 143=SIGTERM）
   if [[ $exit_code -eq 137 || $exit_code -eq 143 ]]; then

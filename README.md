@@ -52,17 +52,24 @@ ralph start
 - 归档历史查看
 - 在线配置管理
 
-### 安装 Claude Code 插件
+### Claude Code 插件
 
-在 Claude Code 中执行：
+安装 `claude-ralph` 后，Skills 随 npm 包一同分发。运行 `ralph init` 时会自动尝试注册到 Claude Code。
 
+如果自动注册失败，可手动安装：
 ```bash
-/install-plugin marketplace add sickone075-web/ralph-zh
+claude install "$(npm root -g)/claude-ralph/.claude-plugin"
 ```
 
-安装后可用的 skill：
+可用的 skill：
 - `/prd` — 生成产品需求文档（含头脑风暴和需求讨论）
 - `/ralph` — 将 PRD 转换为 prd.json 任务格式
+
+### 更新
+
+```bash
+npm update -g claude-ralph
+```
 
 ## CLI 命令
 

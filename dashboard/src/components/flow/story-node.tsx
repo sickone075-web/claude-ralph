@@ -83,11 +83,10 @@ function StoryNodeComponent({ data }: NodeProps & { data: StoryNodeData }) {
         status === "running" ? "animate-pulse-glow" : ""
       }`}
     >
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500"
-      />
+      {/* Connection handles - all directions */}
+      <Handle type="target" position={Position.Top} id="top" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
+      <Handle type="target" position={Position.Left} id="left-target" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
+      <Handle type="target" position={Position.Right} id="right-target" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
 
       {/* Header: ID + status icon */}
       <div className="mb-1.5 flex items-center justify-between">
@@ -110,11 +109,10 @@ function StoryNodeComponent({ data }: NodeProps & { data: StoryNodeData }) {
       {/* Title */}
       <p className="text-sm leading-snug text-zinc-200">{title}</p>
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500"
-      />
+      {/* Source handles - all directions */}
+      <Handle type="source" position={Position.Bottom} id="bottom" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
+      <Handle type="source" position={Position.Left} id="left-source" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
+      <Handle type="source" position={Position.Right} id="right-source" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
     </div>
   );
 }

@@ -43,11 +43,10 @@ function EndNodeComponent({ data }: NodeProps & { data: EndNodeData }) {
           : "border-dashed border-zinc-700 bg-zinc-900/60"
       }`}
     >
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500"
-      />
+      {/* Connection handles - all directions */}
+      <Handle type="target" position={Position.Top} id="top" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
+      <Handle type="target" position={Position.Left} id="left-target" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
+      <Handle type="target" position={Position.Right} id="right-target" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
 
       {allCompleted ? (
         <>
