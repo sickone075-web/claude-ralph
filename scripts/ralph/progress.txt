@@ -8,6 +8,8 @@ Started: Tue Mar  3 16:05:19     2026
 - ralph.sh reads config from ~/.ralph/config.json with CLI args as override
 - Skills are markdown files at skills/<name>/SKILL.md with frontmatter (name, description, user-invocable)
 - ralph.sh CLI: `--tool amp|claude --timeout <min> --webhook <url> <max_iterations>`
+- /ralph-stop uses platform detection (uname -s) to choose between taskkill (Windows) and kill (Unix)
+- On Windows (Git Bash), taskkill uses //pid and //t //f (double-slash for MSYS path translation)
 
 ---
 
@@ -43,4 +45,19 @@ Started: Tue Mar  3 16:05:19     2026
   - Skill frontmatter requires: name, description, user-invocable fields
   - Existing skills (prd, ralph) follow the same pattern in skills/ directory
   - ralph.sh CLI: `--tool amp|claude --timeout <min> --webhook <url> <max_iterations>`
+---
+
+## 2026-03-03 - US-003
+- Created /ralph-stop Skill at skills/stop/SKILL.md
+- Files changed: skills/stop/SKILL.md
+- **What was implemented:**
+  - Skill with name `ralph-stop`, user-invocable: true
+  - 6-step flow: check PID file → verify process alive → terminate (platform-aware) → verify termination → cleanup → confirm
+  - Platform detection via `uname -s` for Windows (taskkill) vs Unix (kill) compatibility
+  - Stale PID file cleanup when process is already dead
+  - Fallback to `kill -9` if graceful termination fails
+- **Learnings for future iterations:**
+  - /ralph-stop uses platform detection (uname -s) to choose between taskkill (Windows) and kill (Unix)
+  - On Windows (Git Bash), taskkill uses //pid and //t //f (double-slash for MSYS path translation)
+  - Skills should handle stale PID files gracefully (process died without cleanup)
 ---

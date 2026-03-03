@@ -49,7 +49,7 @@
         "返回 Ralph 已停止 结果"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Skill 是 markdown 指令文件。需兼容 Windows（taskkill）和 Unix（kill）。"
     },
     {
