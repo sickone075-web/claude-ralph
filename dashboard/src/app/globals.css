@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "@xyflow/react/dist/style.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -215,4 +216,17 @@
 
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(6, 182, 212, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(6, 182, 212, 0.4), 0 0 4px rgba(59, 130, 246, 0.2);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }

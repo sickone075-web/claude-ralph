@@ -13,6 +13,8 @@
   },
   "files": [
     "dist/",
+    "skills/",
+    ".claude-plugin/",
     "dashboard/.next/standalone/",
     "dashboard/.next/static/",
     "dashboard/public/",

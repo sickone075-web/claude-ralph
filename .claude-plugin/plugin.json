@@ -5,6 +5,6 @@
   "author": {
     "name": "sickone075-web"
   },
-  "skills": "./skills/",
+  "skills": "../skills/",
   "keywords": ["ralph", "prd", "中文", "automation", "agent", "brainstorming", "requirements"]
 }

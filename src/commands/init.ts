@@ -1,11 +1,12 @@
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { platform } from 'node:os';
+import { homedir, platform } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import { readConfig, writeConfig, getConfigPath, type RalphConfig } from '../lib/global-config.js';
+import type { RepoConfig } from '../lib/global-config.js';
 
 const BRAND = chalk.hex('#6366f1');
 const WARN = chalk.yellow;
@@ -21,6 +22,23 @@ const RALPH_LOGO = `
   ██║  ██║██║  ██║███████╗██║     ██║  ██║
   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝  ╚═╝
 `;
+
+const EXTERNAL_SKILLS = [
+  {
+    name: 'superpowers',
+    key: 'superpowers@superpowers-marketplace',
+    description: '工作流增强（brainstorming、code-review、debugging 等）',
+    installHint: '在 Claude Code 中运行: /install-plugin superpowers-marketplace',
+    required: false,
+  },
+  {
+    name: 'dev-browser',
+    keyPattern: 'dev-browser',
+    description: '浏览器测试（UI 故事验证必需）',
+    installHint: '在 Claude Code 中搜索并安装 dev-browser 插件',
+    required: false,
+  },
+] as const;
 
 const GIT_BASH_PATHS = [
   'C:\\Program Files\\Git\\bin\\bash.exe',
@@ -374,10 +392,220 @@ async function stepFirstProject(config: RalphConfig, action: 'overwrite' | 'keep
   return config;
 }
 
+function getPackageRoot(): string {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  // dist/commands/init.js → package root (2 levels up)
+  return resolve(__dirname, '../..');
+}
+
+const REPO_TYPES: RepoConfig['type'][] = ['docs', 'backend', 'frontend', 'app', 'other'];
+
+async function stepRepositories(config: RalphConfig): Promise<RalphConfig> {
+  // Only run if a project was just added or already exists
+  const project = config.projects.find(p => p.name === config.activeProject);
+  if (!project) return config;
+
+  console.log(chalk.bold('\n  📦 多仓库配置\n'));
+
+  const { isMultiRepo } = await inquirer.prompt<{ isMultiRepo: boolean }>([
+    {
+      type: 'confirm',
+      name: 'isMultiRepo',
+      message: '是否为多仓库项目？（前后端分离、文档仓库等）',
+      default: false,
+    },
+  ]);
+
+  if (!isMultiRepo) {
+    console.log(DIM('  跳过多仓库配置\n'));
+    return config;
+  }
+
+  if (!project.repositories) {
+    project.repositories = {};
+  }
+
+  let addMore = true;
+  while (addMore) {
+    const existingRepos = project.repositories!;
+
+    const { name } = await inquirer.prompt<{ name: string }>([
+      {
+        type: 'input',
+        name: 'name',
+        message: '仓库名称：',
+        validate: (input: string) => {
+          if (!input.trim()) return '仓库名称不能为空';
+          if (input.trim() in existingRepos) return `仓库 "${input.trim()}" 已存在`;
+          return true;
+        },
+      },
+    ]);
+
+    const { repoPath } = await inquirer.prompt<{ repoPath: string }>([
+      {
+        type: 'input',
+        name: 'repoPath',
+        message: '仓库绝对路径：',
+        validate: (input: string) => {
+          if (!input.trim()) return '路径不能为空';
+          const resolved = resolve(input.trim());
+          if (!existsSync(resolved)) return `路径不存在：${resolved}`;
+          return true;
+        },
+      },
+    ]);
+
+    const { repoType } = await inquirer.prompt<{ repoType: RepoConfig['type'] }>([
+      {
+        type: 'list',
+        name: 'repoType',
+        message: '仓库类型：',
+        choices: REPO_TYPES,
+      },
+    ]);
+
+    const defaultPriority = repoType === 'docs' ? 0 : 1;
+    const { priority } = await inquirer.prompt<{ priority: number }>([
+      {
+        type: 'number',
+        name: 'priority',
+        message: '执行优先级（数字越小越先执行）：',
+        default: defaultPriority,
+      },
+    ]);
+
+    const { checksInput } = await inquirer.prompt<{ checksInput: string }>([
+      {
+        type: 'input',
+        name: 'checksInput',
+        message: '质量检查命令（可选，逗号分隔）：',
+        default: '',
+      },
+    ]);
+
+    const resolvedPath = resolve(repoPath.trim());
+    const repoConfig: RepoConfig = {
+      path: resolvedPath,
+      type: repoType,
+      priority: priority,
+    };
+
+    const trimmedChecks = checksInput.trim();
+    if (trimmedChecks) {
+      repoConfig.checks = trimmedChecks.split(',').map(c => c.trim()).filter(Boolean);
+    }
+
+    project.repositories![name.trim()] = repoConfig;
+    console.log(OK(`  ✓ 仓库 "${name.trim()}" 已添加`));
+
+    const { continueAdding } = await inquirer.prompt<{ continueAdding: boolean }>([
+      {
+        type: 'confirm',
+        name: 'continueAdding',
+        message: '继续添加仓库？',
+        default: false,
+      },
+    ]);
+    addMore = continueAdding;
+  }
+
+  return config;
+}
+
 function stepPluginGuide(): void {
-  console.log(chalk.bold('\n  🔌 Claude Code 插件\n'));
-  console.log('  如需使用 Ralph 中文技能插件，请在 Claude Code 中执行：');
-  console.log(BRAND('    /install-plugin marketplace add sickone075-web/ralph-zh'));
+  console.log(chalk.bold('\n  🔌 Claude Code Skills 注册\n'));
+
+  const pkgRoot = getPackageRoot();
+  const pluginDir = resolve(pkgRoot, '.claude-plugin');
+  const skillsDir = resolve(pkgRoot, 'skills');
+
+  if (!existsSync(skillsDir)) {
+    console.log(WARN('  ⚠ Skills 目录未找到，请检查安装是否完整'));
+    console.log(DIM(`    预期路径: ${skillsDir}\n`));
+    return;
+  }
+
+  console.log(OK('  ✓ Skills 目录已就绪'));
+  console.log(DIM(`    路径: ${skillsDir}\n`));
+
+  // Try auto-install via claude CLI
+  let installed = false;
+  try {
+    execSync(`claude plugins install "${pluginDir}"`, { stdio: 'pipe' });
+    console.log(OK('  ✓ Skills 已自动注册到 Claude Code'));
+    installed = true;
+  } catch {
+    // claude plugins install may not be the right command, or CLI unavailable
+  }
+
+  if (!installed) {
+    try {
+      execSync(`claude install "${pluginDir}"`, { stdio: 'pipe' });
+      console.log(OK('  ✓ Skills 已自动注册到 Claude Code'));
+      installed = true;
+    } catch {
+      // Fall through to manual instructions
+    }
+  }
+
+  if (!installed) {
+    console.log(WARN('  ⚠ 未能自动注册 Skills，请手动安装：'));
+    console.log(DIM(`    claude install "${pluginDir}"`));
+    console.log(DIM('    或在 Claude Code Marketplace 中搜索 "ralph-zh-skills"\n'));
+  }
+
+  console.log('  可用的 skill：');
+  console.log(BRAND('    /prd') + '   — 生成产品需求文档（含头脑风暴和需求讨论）');
+  console.log(BRAND('    /ralph') + ' — 将 PRD 转换为 prd.json 任务格式');
+  console.log('');
+}
+
+function checkInstalledPlugins(): Record<string, boolean> {
+  const result: Record<string, boolean> = {};
+  try {
+    const settingsPath = resolve(homedir(), '.claude', 'settings.json');
+    if (!existsSync(settingsPath)) return result;
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
+    const enabled = settings.enabledPlugins ?? {};
+    const keys = Object.keys(enabled);
+
+    for (const skill of EXTERNAL_SKILLS) {
+      if ('key' in skill && skill.key) {
+        result[skill.name] = keys.some(k => k === skill.key && enabled[k]);
+      } else if ('keyPattern' in skill && skill.keyPattern) {
+        result[skill.name] = keys.some(k => k.includes(skill.keyPattern) && enabled[k]);
+      }
+    }
+  } catch {
+    // settings.json 不存在或解析失败，视为全部未安装
+  }
+  return result;
+}
+
+function stepExternalSkills(): void {
+  console.log(chalk.bold('\n  🧩 外部 Skills 检测\n'));
+
+  const installed = checkInstalledPlugins();
+  let allInstalled = true;
+
+  for (const skill of EXTERNAL_SKILLS) {
+    if (installed[skill.name]) {
+      console.log(OK(`  ✓ ${skill.name} — ${skill.description}`));
+    } else {
+      allInstalled = false;
+      console.log(WARN(`  ⚠ ${skill.name} 未检测到 — ${skill.description}`));
+      console.log(DIM(`    ${skill.installHint}`));
+    }
+  }
+
+  if (allInstalled) {
+    console.log(OK('\n  所有推荐 Skills 已就绪'));
+  } else {
+    console.log(DIM('\n  缺少的 Skills 不影响基础功能，但部分高级功能（如 UI 浏览器验证）将不可用'));
+    console.log(DIM('  可稍后在 Claude Code 中安装'));
+  }
   console.log('');
 }
 
@@ -391,6 +619,18 @@ function stepCompletion(config: RalphConfig): void {
   console.log(`  ├─ 飞书通知：       ${config.webhookUrl ? OK('已配置') : DIM('未配置')}`);
   console.log(`  ├─ Git Bash 路径：  ${config.gitBashPath || DIM('未设置')}`);
   console.log(`  └─ 项目：           ${config.projects.length > 0 ? config.projects.map(p => p.name).join(', ') : DIM('无')}`);
+
+  // Show repositories for active project
+  const activeProject = config.projects.find(p => p.name === config.activeProject);
+  if (activeProject?.repositories && Object.keys(activeProject.repositories).length > 0) {
+    console.log('');
+    console.log('  仓库列表：');
+    const repos = Object.entries(activeProject.repositories);
+    repos.forEach(([repoName, repo], i) => {
+      const prefix = i < repos.length - 1 ? '├─' : '└─';
+      console.log(`  ${prefix} ${repoName} (${repo.type}) — ${repo.path}`);
+    });
+  }
   console.log('');
   console.log(`  配置已保存到 ${DIM(getConfigPath())}`);
   console.log(`  执行 ${BRAND('ralph start')} 启动 Web 控制台`);
@@ -435,10 +675,16 @@ export async function runInit(): Promise<void> {
   // Step 6: First project
   config = await stepFirstProject(config, action);
 
-  // Step 7: Claude Code plugin guidance
+  // Step 7: Repositories (multi-repo)
+  config = await stepRepositories(config);
+
+  // Step 8: Claude Code plugin guidance
   stepPluginGuide();
 
-  // Step 8: Completion — save & summary
+  // Step 8: External skills detection
+  stepExternalSkills();
+
+  // Step 9: Completion — save & summary
   writeConfig(config);
   stepCompletion(config);
 }
