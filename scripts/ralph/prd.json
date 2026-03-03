@@ -146,8 +146,8 @@
         "TypeScript 类型检查通过"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": "依赖 US-007 的配置模块重构。API 路由放在 dashboard/src/app/api/projects/ 目录。"
+      "passes": true,
+      "notes": "依赖 US-007 的配置模块重构。API 路由放在 dashboard/src/app/api/projects/ 目录。ralph/start 已使用 getActiveProjectPaths() 设置活跃项目 cwd。"
     },
     {
       "id": "US-009",
@@ -166,8 +166,8 @@
         "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": "依赖 US-008 的 projects API。使用 shadcn/ui 的 DropdownMenu 或 Select 组件。"
+      "passes": true,
+      "notes": "依赖 US-008 的 projects API。使用自定义下拉菜单（非 Radix Select，因为需要更灵活的布局含底部添加按钮）。项目切换时 setPrd(null) 触发骨架屏过渡，然后重新拉取 PRD 数据。添加项目对话框使用 shadcn/ui Dialog 组件。"
     },
     {
       "id": "US-010",

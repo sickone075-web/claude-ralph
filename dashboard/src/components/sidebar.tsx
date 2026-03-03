@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { RalphStatusIndicator } from "./ralph-status-indicator";
+import { ProjectSwitcher } from "./project-switcher";
 
 const navItems = [
   { href: "/dashboard", label: "仪表盘", icon: LayoutDashboard },
@@ -36,6 +37,9 @@ function NavContent() {
         <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">Ralph</h1>
         <p className="text-xs text-zinc-400 mt-0.5">项目控制台</p>
       </div>
+
+      {/* Project Switcher */}
+      <ProjectSwitcher />
 
       {/* Navigation */}
       <nav className="flex-1 px-2 space-y-1">

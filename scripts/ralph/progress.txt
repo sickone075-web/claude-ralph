@@ -12,6 +12,8 @@
 - Port check: use net.createServer trick to test if port is available before starting servers
 - Dashboard config (dashboard/src/lib/config.ts) mirrors src/lib/global-config.ts structure; all API routes use getActiveProjectPaths() for project-relative paths
 - ws.ts (WebSocket server) runs standalone via tsx and imports from relative paths (../src/lib/), not @/lib/ aliases
+- Next.js 16 dynamic route params are `Promise<{ name: string }>` — must be awaited
+- Pre-existing lint errors (7 total) won't block commits; they're in ws.ts, logs, story components, websocket hook
 
 # Ralph Progress Log
 Started: 2026年03月 2日 22:51:22
@@ -86,4 +88,25 @@ Started: 2026年03月 2日 22:51:22
   - ws.ts is the only file that runs outside Next.js (standalone TypeScript via tsx), so it imports from relative paths not @/lib/ aliases
   - The chokidar watcher needs cleanup (close old watcher) when switching projects — setupFileWatcher() pattern supports re-initialization
   - All 13 API routes already used getActiveProjectPaths() correctly; only ws.ts was using the old config.prdPath/progressPath pattern
+---
+
+## 2026-03-03 - US-008
+- What was implemented: Multi-project management data model and API. Created 4 API routes: GET /api/projects (list projects + active), POST /api/projects (add project with path validation), PUT /api/projects/active (switch active project), DELETE /api/projects/[name] (remove project from config). Created CLI `ralph add-project` interactive command using Inquirer.js. ralph/start already used getActiveProjectPaths() for cwd — no changes needed.
+- Files changed: dashboard/src/app/api/projects/route.ts (new), dashboard/src/app/api/projects/active/route.ts (new), dashboard/src/app/api/projects/[name]/route.ts (new), src/commands/add-project.ts (new), src/bin/ralph.ts (wired add-project import)
+- **Learnings for future iterations:**
+  - Next.js 16 dynamic route params are async: `{ params }: { params: Promise<{ name: string }> }` — must await params
+  - ralph-process.ts already uses getActiveProjectPaths()?.projectPath as cwd, so US-008's "ralph/start cwd" requirement was already met
+  - URL-encoded project names in DELETE route need decodeURIComponent() for names with special chars
+  - Pre-existing lint errors (7 total) in ws.ts, logs/page.tsx, story components, use-websocket.ts — not related to new code
+---
+
+## 2026-03-03 - US-009
+- What was implemented: Multi-project management Web UI. Created project-switcher.tsx component with: custom dropdown menu showing all projects with checkmark on active project, project switching via PUT /api/projects/active with data refresh (setPrd(null) for skeleton transition then re-fetch), "Add project" dialog with name/path inputs using shadcn/ui Dialog, empty state with dashed border prompt "点击添加你的第一个项目". Integrated into sidebar.tsx below the logo section.
+- Files changed: dashboard/src/components/project-switcher.tsx (new), dashboard/src/components/sidebar.tsx (added ProjectSwitcher import and placement)
+- **Learnings for future iterations:**
+  - Used custom dropdown instead of Radix Select because we need a non-standard layout (project list + separator + "add" button at bottom)
+  - Project switch triggers setPrd(null) to show skeleton loading state, then re-fetches /api/prd for new project data
+  - Click-outside-to-close uses a fixed inset-0 overlay with z-40 (dropdown at z-50)
+  - toast from sonner provides feedback for switch/add operations
+  - The dialog component needs DialogDescription for accessibility (otherwise Radix warns)
 ---
