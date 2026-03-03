@@ -1,44 +1,75 @@
 import path from "path";
 import fs from "fs";
+import os from "os";
+import crypto from "crypto";
 
-export interface DashboardConfig {
-  prdPath: string;
-  progressPath: string;
-  ralphScriptPath: string;
-  defaultTool: "claude" | "amp";
-  defaultMaxIterations: number;
-  terminalFontSize: number;
+export interface ProjectConfig {
+  name: string;
+  path: string;
 }
 
-export const CONFIG_FILE = path.join(process.cwd(), "config.json");
+export interface DashboardConfig {
+  defaultTool: "claude" | "amp";
+  defaultMaxIterations: number;
+  timeoutMinutes: number;
+  maxConsecutiveFailures: number;
+  retryIntervalSeconds: number;
+  webhookUrl: string;
+  gitBashPath: string;
+  port: number;
+  wsPort: number;
+  terminalFontSize: number;
+  autoOpenBrowser: boolean;
+  activeProject: string;
+  projects: ProjectConfig[];
+}
+
+export interface ActiveProjectPaths {
+  prdPath: string;
+  progressPath: string;
+  projectPath: string;
+  archivePath: string;
+}
+
+const CONFIG_DIR = path.join(os.homedir(), ".ralph");
+const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
 
 export const DEFAULTS: DashboardConfig = {
-  prdPath: path.resolve(process.cwd(), "..", "scripts", "ralph", "prd.json"),
-  progressPath: path.resolve(process.cwd(), "..", "scripts", "ralph", "progress.txt"),
-  ralphScriptPath: path.resolve(process.cwd(), "..", "scripts", "ralph", "ralph.sh"),
   defaultTool: "claude",
   defaultMaxIterations: 10,
+  timeoutMinutes: 30,
+  maxConsecutiveFailures: 5,
+  retryIntervalSeconds: 3600,
+  webhookUrl: "",
+  gitBashPath: "",
+  port: 3000,
+  wsPort: 3001,
   terminalFontSize: 14,
+  autoOpenBrowser: true,
+  activeProject: "",
+  projects: [],
 };
+
+export function getConfigPath(): string {
+  return CONFIG_FILE;
+}
 
 export function getConfig(): DashboardConfig {
   try {
+    if (!fs.existsSync(CONFIG_DIR)) {
+      fs.mkdirSync(CONFIG_DIR, { recursive: true });
+    }
+
+    if (!fs.existsSync(CONFIG_FILE)) {
+      writeConfig(DEFAULTS);
+      return { ...DEFAULTS };
+    }
+
     const raw = fs.readFileSync(CONFIG_FILE, "utf-8");
     const parsed = JSON.parse(raw) as Partial<DashboardConfig>;
-    return {
-      prdPath: parsed.prdPath ? path.resolve(parsed.prdPath) : DEFAULTS.prdPath,
-      progressPath: parsed.progressPath ? path.resolve(parsed.progressPath) : DEFAULTS.progressPath,
-      ralphScriptPath: parsed.ralphScriptPath ? path.resolve(parsed.ralphScriptPath) : DEFAULTS.ralphScriptPath,
-      defaultTool: parsed.defaultTool === "amp" ? "amp" : DEFAULTS.defaultTool,
-      defaultMaxIterations: typeof parsed.defaultMaxIterations === "number" && parsed.defaultMaxIterations > 0
-        ? parsed.defaultMaxIterations
-        : DEFAULTS.defaultMaxIterations,
-      terminalFontSize: typeof parsed.terminalFontSize === "number" && parsed.terminalFontSize >= 12 && parsed.terminalFontSize <= 24
-        ? parsed.terminalFontSize
-        : DEFAULTS.terminalFontSize,
-    };
+    return { ...DEFAULTS, ...parsed };
   } catch {
-    return DEFAULTS;
+    return { ...DEFAULTS };
   }
 }
 
@@ -48,8 +79,46 @@ export function writeConfig(config: Partial<DashboardConfig>): DashboardConfig {
     ...current,
     ...config,
   };
-  const tmpFile = CONFIG_FILE + ".tmp";
+
+  if (!fs.existsSync(CONFIG_DIR)) {
+    fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  }
+
+  const tmpFile = path.join(CONFIG_DIR, `.config-${crypto.randomUUID()}.tmp`);
   fs.writeFileSync(tmpFile, JSON.stringify(merged, null, 2), "utf-8");
   fs.renameSync(tmpFile, CONFIG_FILE);
   return merged;
+}
+
+export function getRalphScriptPath(): string {
+  if (process.env.RALPH_SCRIPTS_DIR) {
+    return path.join(process.env.RALPH_SCRIPTS_DIR, "ralph.sh");
+  }
+  const fromDashboard = path.resolve(process.cwd(), "..", "scripts", "ralph", "ralph.sh");
+  if (fs.existsSync(fromDashboard)) {
+    return fromDashboard;
+  }
+  return path.resolve(__dirname, "..", "..", "..", "scripts", "ralph", "ralph.sh");
+}
+
+export function getActiveProjectPaths(): ActiveProjectPaths | null {
+  const config = getConfig();
+
+  if (!config.activeProject || config.projects.length === 0) {
+    return null;
+  }
+
+  const project = config.projects.find((p) => p.name === config.activeProject);
+  if (!project) {
+    return null;
+  }
+
+  const scriptsRalphDir = path.join(project.path, "scripts", "ralph");
+
+  return {
+    prdPath: path.join(scriptsRalphDir, "prd.json"),
+    progressPath: path.join(scriptsRalphDir, "progress.txt"),
+    projectPath: project.path,
+    archivePath: path.join(scriptsRalphDir, "archive"),
+  };
 }

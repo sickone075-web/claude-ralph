@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import path from "path";
 import { simpleGit } from "simple-git";
+import { getActiveProjectPaths } from "@/lib/config";
 import type { GitCommit, ApiResponse } from "@/lib/types";
 
 export async function GET() {
   try {
-    const projectRoot = path.resolve(process.cwd(), "..");
+    const paths = getActiveProjectPaths();
+    const projectRoot = paths?.projectPath ?? path.resolve(process.cwd(), "..");
     const git = simpleGit(projectRoot);
     const log = await git.log({ maxCount: 50 });
 

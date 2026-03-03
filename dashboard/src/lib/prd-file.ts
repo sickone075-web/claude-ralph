@@ -1,6 +1,5 @@
 import fs from "fs";
-import path from "path";
-import { getConfig } from "@/lib/config";
+import { getActiveProjectPaths } from "@/lib/config";
 import type { PRD } from "@/lib/types";
 
 let writeLock = false;
@@ -16,20 +15,28 @@ function releaseLock(): void {
   writeLock = false;
 }
 
+function getPrdPath(): string {
+  const paths = getActiveProjectPaths();
+  if (!paths) {
+    throw Object.assign(new Error("No active project configured"), { code: "ENOENT" });
+  }
+  return paths.prdPath;
+}
+
 export function readPrd(): PRD {
-  const config = getConfig();
-  const raw = fs.readFileSync(config.prdPath, "utf-8");
+  const prdPath = getPrdPath();
+  const raw = fs.readFileSync(prdPath, "utf-8");
   return JSON.parse(raw) as PRD;
 }
 
 export async function writePrd(prd: PRD): Promise<void> {
-  const config = getConfig();
-  const tmpPath = config.prdPath + ".tmp";
+  const prdPath = getPrdPath();
+  const tmpPath = prdPath + ".tmp";
 
   await acquireLock();
   try {
     fs.writeFileSync(tmpPath, JSON.stringify(prd, null, 2) + "\n", "utf-8");
-    fs.renameSync(tmpPath, config.prdPath);
+    fs.renameSync(tmpPath, prdPath);
   } finally {
     releaseLock();
   }

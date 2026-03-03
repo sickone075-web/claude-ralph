@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ralph Dashboard",
-  description: "Visual dashboard for the Ralph autonomous AI agent",
+  title: "Ralph 控制台",
+  description: "Ralph 自主 AI 代理循环系统可视化控制台",
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="zh-CN" className="dark">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

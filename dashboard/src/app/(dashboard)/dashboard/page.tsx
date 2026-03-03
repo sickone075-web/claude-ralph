@@ -70,6 +70,29 @@ export default function DashboardPage() {
   const { prd, ralphStatus, iteration, totalIterations, setPrd } =
     useDashboardStore();
 
+  const handleUpdateStory = useCallback(
+    async (updated: Partial<Story>) => {
+      if (!updated.id) return;
+      try {
+        const res = await fetch(`/api/prd/stories/${updated.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updated),
+        });
+        const json = await res.json();
+        if (json.data && prd) {
+          const updatedStories = prd.userStories.map((s) =>
+            s.id === updated.id ? { ...s, ...updated } : s
+          );
+          setPrd({ ...prd, userStories: updatedStories });
+        }
+      } catch {
+        // WebSocket prd:updated will sync eventually
+      }
+    },
+    [prd, setPrd]
+  );
+
   if (!prd) {
     return (
       <div className="p-6 space-y-6">
@@ -121,7 +144,7 @@ export default function DashboardPage() {
     );
   }
 
-  const stories = prd?.userStories ?? [];
+  const stories = prd.userStories ?? [];
   const total = stories.length;
   const completedCount = stories.filter((s) => s.passes).length;
   const pendingCount = total - completedCount;
@@ -132,30 +155,6 @@ export default function DashboardPage() {
     ralphStatus === "running"
       ? stories.find((s) => !s.passes)?.id ?? null
       : null;
-
-  const handleUpdateStory = useCallback(
-    async (updated: Partial<Story>) => {
-      if (!updated.id) return;
-      try {
-        const res = await fetch(`/api/prd/stories/${updated.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updated),
-        });
-        const json = await res.json();
-        if (json.data && prd) {
-          // Update local store immediately
-          const updatedStories = prd.userStories.map((s) =>
-            s.id === updated.id ? { ...s, ...updated } : s
-          );
-          setPrd({ ...prd, userStories: updatedStories });
-        }
-      } catch {
-        // WebSocket prd:updated will sync eventually
-      }
-    },
-    [prd, setPrd]
-  );
 
   const badge = statusBadge[ralphStatus];
 

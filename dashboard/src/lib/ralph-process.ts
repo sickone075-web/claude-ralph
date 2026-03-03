@@ -1,5 +1,5 @@
 import { spawn, ChildProcess, execSync } from "child_process";
-import { getConfig } from "./config";
+import { getRalphScriptPath, getActiveProjectPaths } from "./config";
 
 export type RalphStatus = "idle" | "running" | "completed" | "error";
 
@@ -41,8 +41,9 @@ export function startRalph(params: {
     throw new Error("Ralph is already running");
   }
 
-  const config = getConfig();
-  const scriptPath = config.ralphScriptPath;
+  const scriptPath = getRalphScriptPath();
+  const projectPaths = getActiveProjectPaths();
+  const cwd = projectPaths?.projectPath ?? scriptPath.substring(0, scriptPath.lastIndexOf("/"));
 
   const args = ["--tool", params.tool, String(params.maxIterations)];
 
@@ -52,12 +53,12 @@ export function startRalph(params: {
   if (isWindows) {
     child = spawn("bash", [scriptPath, ...args], {
       stdio: ["pipe", "pipe", "pipe"],
-      cwd: scriptPath.substring(0, scriptPath.lastIndexOf("/")),
+      cwd,
     });
   } else {
     child = spawn(scriptPath, args, {
       stdio: ["pipe", "pipe", "pipe"],
-      cwd: scriptPath.substring(0, scriptPath.lastIndexOf("/")),
+      cwd,
     });
   }
 

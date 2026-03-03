@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { getActiveProjectPaths } from "@/lib/config";
 import type { ArchiveItem, ApiResponse, PRD } from "@/lib/types";
 
-function getArchiveDir(): string {
-  return path.resolve(process.cwd(), "..", "scripts", "ralph", "archive");
+function getArchiveDir(): string | null {
+  const paths = getActiveProjectPaths();
+  return paths?.archivePath ?? null;
 }
 
 export async function GET() {
   try {
     const archiveDir = getArchiveDir();
 
-    if (!fs.existsSync(archiveDir)) {
+    if (!archiveDir || !fs.existsSync(archiveDir)) {
       return NextResponse.json({
         data: [],
         error: null,

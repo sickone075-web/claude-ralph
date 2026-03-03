@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
-import { getConfig } from "@/lib/config";
+import { getActiveProjectPaths } from "@/lib/config";
 import { parseProgressLogData } from "@/lib/progress-parser";
 import type { ProgressLogData, ApiResponse } from "@/lib/types";
 
 export async function GET() {
   try {
-    const config = getConfig();
-    const content = fs.readFileSync(config.progressPath, "utf-8");
+    const paths = getActiveProjectPaths();
+    if (!paths) {
+      return NextResponse.json({
+        data: { codebasePatterns: [], records: [] },
+        error: null,
+      } satisfies ApiResponse<ProgressLogData>);
+    }
+    const content = fs.readFileSync(paths.progressPath, "utf-8");
     const data = parseProgressLogData(content);
     return NextResponse.json({
       data,

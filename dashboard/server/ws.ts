@@ -1,8 +1,8 @@
 import { WebSocketServer, WebSocket } from "ws";
-import { watch } from "chokidar";
+import { watch, FSWatcher } from "chokidar";
 import path from "path";
 import { onEvent, sendStdin } from "../src/lib/ralph-process";
-import { getConfig } from "../src/lib/config";
+import { getActiveProjectPaths } from "../src/lib/config";
 
 const PORT = 3001;
 
@@ -27,36 +27,57 @@ onEvent((event: string, data: unknown) => {
   broadcast(event, data as object);
 });
 
-// Watch prd.json and progress.txt for changes
-const config = getConfig();
-const filesToWatch = [config.prdPath, config.progressPath];
-
+// Watch prd.json and progress.txt for changes based on active project
 let debounceTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+let currentWatcher: FSWatcher | null = null;
+let currentPrdPath: string | null = null;
 
-const watcher = watch(filesToWatch, {
-  ignoreInitial: true,
-  awaitWriteFinish: {
-    stabilityThreshold: 300,
-    pollInterval: 100,
-  },
-});
-
-watcher.on("change", (filePath: string) => {
-  const normalized = path.resolve(filePath);
-  const eventType = normalized === path.resolve(config.prdPath)
-    ? "prd:updated"
-    : "progress:updated";
-
-  // Debounce 500ms per file
-  if (debounceTimers[normalized]) {
-    clearTimeout(debounceTimers[normalized]);
+function setupFileWatcher() {
+  // Clean up previous watcher
+  if (currentWatcher) {
+    currentWatcher.close();
+    currentWatcher = null;
+    currentPrdPath = null;
   }
 
-  debounceTimers[normalized] = setTimeout(() => {
-    broadcast(eventType, { file: normalized });
-    delete debounceTimers[normalized];
-  }, 500);
-});
+  const projectPaths = getActiveProjectPaths();
+  if (!projectPaths) {
+    console.log("[WS] No active project configured, file watching disabled");
+    return;
+  }
+
+  const filesToWatch = [projectPaths.prdPath, projectPaths.progressPath];
+  currentPrdPath = projectPaths.prdPath;
+
+  currentWatcher = watch(filesToWatch, {
+    ignoreInitial: true,
+    awaitWriteFinish: {
+      stabilityThreshold: 300,
+      pollInterval: 100,
+    },
+  });
+
+  currentWatcher.on("change", (filePath: string) => {
+    const normalized = path.resolve(filePath);
+    const eventType = currentPrdPath && normalized === path.resolve(currentPrdPath)
+      ? "prd:updated"
+      : "progress:updated";
+
+    // Debounce 500ms per file
+    if (debounceTimers[normalized]) {
+      clearTimeout(debounceTimers[normalized]);
+    }
+
+    debounceTimers[normalized] = setTimeout(() => {
+      broadcast(eventType, { file: normalized });
+      delete debounceTimers[normalized];
+    }, 500);
+  });
+
+  console.log("[WS] Watching files:", filesToWatch);
+}
+
+setupFileWatcher();
 
 // Handle incoming WebSocket connections
 wss.on("connection", (ws: WebSocket) => {

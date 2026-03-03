@@ -10,6 +10,8 @@
 - Dashboard uses Next.js 16 with tsx for WS server; `next start` for production, standalone mode when available
 - On Windows, use `.cmd` suffixed binaries from node_modules/.bin (next.cmd, tsx.cmd) and set shell: true for spawn
 - Port check: use net.createServer trick to test if port is available before starting servers
+- Dashboard config (dashboard/src/lib/config.ts) mirrors src/lib/global-config.ts structure; all API routes use getActiveProjectPaths() for project-relative paths
+- ws.ts (WebSocket server) runs standalone via tsx and imports from relative paths (../src/lib/), not @/lib/ aliases
 
 # Ralph Progress Log
 Started: 2026年03月 2日 22:51:22
@@ -74,4 +76,14 @@ Started: 2026年03月 2日 22:51:22
   - taskkill /T /F kills the process tree on Windows (important for Next.js which spawns children)
   - standalone server.js check allows graceful upgrade path when US-012 adds standalone output config
   - Commander.js `--no-open` auto-creates `opts.open` as boolean (false when flag present)
+---
+
+## 2026-03-03 - US-007
+- What was implemented: Web console config module refactoring. The config.ts was already mostly refactored in prior iterations (uses ~/.ralph/config.json, has DashboardConfig with all new fields, getActiveProjectPaths(), getRalphScriptPath()). The main fix was updating the WebSocket server (ws.ts) which still referenced non-existent config.prdPath and config.progressPath fields. Replaced with getActiveProjectPaths() pattern matching all API routes.
+- Files changed: dashboard/server/ws.ts (refactored file watching to use getActiveProjectPaths())
+- **Learnings for future iterations:**
+  - Most of US-007's acceptance criteria were already satisfied by prior stories — always check current state before implementing
+  - ws.ts is the only file that runs outside Next.js (standalone TypeScript via tsx), so it imports from relative paths not @/lib/ aliases
+  - The chokidar watcher needs cleanup (close old watcher) when switching projects — setupFileWatcher() pattern supports re-initialization
+  - All 13 API routes already used getActiveProjectPaths() correctly; only ws.ts was using the old config.prdPath/progressPath pattern
 ---

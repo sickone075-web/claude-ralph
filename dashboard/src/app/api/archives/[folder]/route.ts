@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { getActiveProjectPaths } from "@/lib/config";
 import { parseProgressLogData } from "@/lib/progress-parser";
 import type { ArchiveDetail, ApiResponse, PRD, ProgressLogData } from "@/lib/types";
 
-function getArchiveDir(): string {
-  return path.resolve(process.cwd(), "..", "scripts", "ralph", "archive");
+function getArchiveDir(): string | null {
+  const paths = getActiveProjectPaths();
+  return paths?.archivePath ?? null;
 }
 
 export async function GET(
@@ -14,6 +16,14 @@ export async function GET(
 ) {
   const { folder } = await params;
   const archiveDir = getArchiveDir();
+
+  if (!archiveDir) {
+    return NextResponse.json(
+      { data: null, error: "No active project configured" } satisfies ApiResponse<ArchiveDetail>,
+      { status: 404 }
+    );
+  }
+
   const folderPath = path.join(archiveDir, folder);
 
   // Prevent path traversal

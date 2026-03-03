@@ -128,8 +128,8 @@
         "TypeScript 类型检查通过"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": "这是多项目管理的基础。现有 14 个 API 路由和 ws.ts 都需要从 config 获取路径。逐个更新导入和路径引用。"
+      "passes": true,
+      "notes": "这是多项目管理的基础。config.ts 已重构为 ~/.ralph/config.json，所有 API 路由和 lib 模块使用 getActiveProjectPaths()，ws.ts 已修复为动态获取活跃项目路径。"
     },
     {
       "id": "US-008",
