@@ -4,8 +4,6 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import {
   Terminal,
-  Play,
-  Square,
   Loader2,
   Clock,
   Hash,
@@ -19,13 +17,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useWebSocket, useRalphStatus } from "@/hooks/use-websocket";
 import { useDashboardStore } from "@/lib/store";
@@ -50,8 +41,8 @@ const WELCOME_MESSAGE = [
   "",
   "\x1b[1;37m  自主 AI 代理循环\x1b[0m",
   "",
-  "\x1b[90m  Ralph 当前未运行。使用上方控件启动。\x1b[0m",
-  "\x1b[90m  选择 AI 工具和最大迭代次数，然后点击启动。\x1b[0m",
+  "\x1b[90m  Ralph 当前未运行。\x1b[0m",
+  "\x1b[90m  在 Claude Code 中使用 /ralph-start 启动循环。\x1b[0m",
   "",
 ].join("\r\n");
 
@@ -95,10 +86,6 @@ export default function TerminalPage() {
   const prd = useDashboardStore((s) => s.prd);
   const ws = useWebSocket();
 
-  const [tool, setTool] = useState<"claude" | "amp">("claude");
-  const [maxIterations, setMaxIterations] = useState("10");
-  const [isStarting, setIsStarting] = useState(false);
-  const [isStopping, setIsStopping] = useState(false);
   const [elapsed, setElapsed] = useState("00:00");
 
   // Iteration history state
@@ -272,49 +259,6 @@ export default function TerminalPage() {
     [ws, status]
   );
 
-  const handleStart = async () => {
-    setIsStarting(true);
-    // Reset state for new session
-    setIterationBuffers(new Map());
-    setCurrentIterationNum(0);
-    setActiveTab("live");
-    liveOutputRef.current = "";
-    currentIterOutputRef.current = "";
-    setCompletionSummary(null);
-
-    try {
-      const res = await fetch("/api/ralph/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tool,
-          maxIterations: parseInt(maxIterations, 10),
-        }),
-      });
-      if (!res.ok) {
-        const json = await res.json();
-        liveTermHandleRef.current?.write(
-          `\r\n\x1b[31mError: ${json.error || "Failed to start Ralph"}\x1b[0m\r\n`
-        );
-      }
-    } catch {
-      // Network error
-    } finally {
-      setIsStarting(false);
-    }
-  };
-
-  const handleStop = async () => {
-    setIsStopping(true);
-    try {
-      await fetch("/api/ralph/stop", { method: "POST" });
-    } catch {
-      // Network error
-    } finally {
-      setIsStopping(false);
-    }
-  };
-
   const handleClear = () => {
     if (activeTab === "live") {
       liveTermHandleRef.current?.clear();
@@ -367,7 +311,7 @@ export default function TerminalPage() {
     <div className="flex flex-col h-full">
       {/* Top bar - Row 1: Title + Status info */}
       <div className="flex flex-col gap-0 border-b border-zinc-800 bg-zinc-950/50">
-        <div className="flex items-center gap-3 px-4 pt-3 pb-2">
+        <div className="flex items-center gap-3 px-4 py-3">
           <div className="flex items-center gap-2">
             <Terminal className="h-5 w-5 text-zinc-400" />
             <h1 className="text-lg font-semibold text-zinc-100">终端</h1>
@@ -410,73 +354,6 @@ export default function TerminalPage() {
               </Badge>
             )}
           </div>
-        </div>
-
-        {/* Row 2: Controls */}
-        <div className="flex items-center gap-2 px-4 pb-3">
-          {/* Tool selector */}
-          {status !== "running" && (
-            <Select
-              value={tool}
-              onValueChange={(v) => setTool(v as "claude" | "amp")}
-            >
-              <SelectTrigger className="w-[110px] h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="claude">Claude</SelectItem>
-                <SelectItem value="amp">Amp</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-
-          {/* Max iterations */}
-          {status !== "running" && (
-            <Select value={maxIterations} onValueChange={setMaxIterations}>
-              <SelectTrigger className="w-[80px] h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[1, 3, 5, 10, 15, 20].map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    {n} 次
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
-          {/* Start/Stop buttons */}
-          {status === "running" ? (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleStop}
-              disabled={isStopping}
-              className="gap-1"
-            >
-              {isStopping ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Square className="h-3.5 w-3.5" />
-              )}
-              停止
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              onClick={handleStart}
-              disabled={isStarting}
-              className="gap-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border-transparent card-glow"
-            >
-              {isStarting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Play className="h-3.5 w-3.5" />
-              )}
-              启动
-            </Button>
-          )}
         </div>
       </div>
 
