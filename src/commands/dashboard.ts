@@ -122,22 +122,17 @@ export async function runDashboard(options: { open?: boolean }): Promise<void> {
   }
   children.push(nextChild);
 
-  // Start WebSocket server
+  // Start WebSocket server (bundled as dist/ws-server.js)
   const isWin = platform() === 'win32';
-  const tsxBinDir = resolve(dashboardDir, 'node_modules/.bin');
-  const tsxBin = isWin
-    ? resolve(tsxBinDir, 'tsx.cmd')
-    : resolve(tsxBinDir, 'tsx');
-  const wsScript = resolve(dashboardDir, 'server/ws.ts');
+  const wsServerPath = resolve(__dirname, '../ws-server.cjs');
 
-  const wsChild = spawn(tsxBin, [wsScript], {
+  const wsChild = spawn('node', [wsServerPath], {
     cwd: dashboardDir,
     env: {
       ...process.env,
       RALPH_SCRIPTS_DIR: scriptsDir,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
-    shell: isWin,
   });
   children.push(wsChild);
 

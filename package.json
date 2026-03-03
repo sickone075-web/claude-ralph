@@ -1,6 +1,6 @@
 {
   "name": "claude-ralph-agent",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Ralph 管理工具 — 安装引导、启动控制台、管理项目",
   "type": "module",
   "bin": {
@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "tsc && cd dashboard && npm install && npm run build && cd .. && node scripts/prepare-standalone.cjs",
+    "prepublishOnly": "tsc && npx esbuild dashboard/server/ws.ts --bundle --platform=node --format=cjs --outfile=dist/ws-server.cjs && cd dashboard && npm install && npm run build && cd .. && node scripts/prepare-standalone.cjs",
     "postinstall": "node scripts/postinstall.cjs"
   },
   "files": [
@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "esbuild": "^0.27.3",
     "typescript": "^5"
   },
   "engines": {
