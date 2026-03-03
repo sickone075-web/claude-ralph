@@ -11,9 +11,21 @@ const statusConfig: Record<
   error: { color: "bg-red-500", label: "错误", animate: false },
 };
 
-export function RalphStatusIndicator() {
+export function RalphStatusIndicator({ compact }: { compact?: boolean }) {
   const { ralphStatus, iteration, totalIterations } = useDashboardStore();
   const config = statusConfig[ralphStatus];
+
+  if (compact) {
+    return (
+      <div
+        className={`rounded-full ${config.color} ${
+          config.animate ? "animate-pulse" : ""
+        }`}
+        style={{ width: 10, height: 10 }}
+        title={config.label}
+      />
+    );
+  }
 
   return (
     <div className="flex items-center gap-2">
