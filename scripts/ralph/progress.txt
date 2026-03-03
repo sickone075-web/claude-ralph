@@ -315,3 +315,18 @@ Started: 2026年03月 2日 22:51:22
   - `.ralph-pid` file watching enables real-time running status updates for multi-repo dashboard cards (complements US-012 polling)
   - Multi-repo watcher logs repo names for easier debugging: `[WS] Multi-repo mode: watching files for repos: docs, backend, frontend`
 ---
+
+## 2026-03-03 - US-015 (multi-repo-support)
+- What was implemented: Updated `scripts/ralph/prd.json.example` from single-repo format to multi-repo format with `repositories` config and `repo` field on each story
+- Files changed:
+  - scripts/ralph/prd.json.example - Rewrote example with docs/backend/frontend repos, priority ordering, and repo-specific stories
+- Key content:
+  - Added `repositories` field with three repos: docs (priority 0), backend (priority 1), frontend (priority 1)
+  - Each story now has a `repo` field pointing to a repository key
+  - Example demonstrates contract-first workflow: docs repo stories run first, then backend/frontend in parallel
+  - All existing story fields preserved (id, title, description, acceptanceCriteria, priority, passes, notes)
+- **Learnings for future iterations:**
+  - prd.json.example is a documentation file — no TypeScript changes needed, but still verify both builds pass
+  - The example demonstrates the recommended contract-first pattern: docs repo at priority 0, implementation repos at priority 1
+  - `repo` field on stories is the key addition for multi-repo PRDs — maps story to a specific repository
+---

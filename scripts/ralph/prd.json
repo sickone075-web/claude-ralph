@@ -254,7 +254,7 @@
         "保留 story 的所有现有字段（id、title、description、acceptanceCriteria、priority、passes、notes）"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]
