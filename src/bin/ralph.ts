@@ -6,6 +6,7 @@ import { dirname, resolve } from 'node:path';
 import { runInit } from '../commands/init.js';
 import { runStart } from '../commands/start.js';
 import { runStop } from '../commands/stop.js';
+import { runAddProject } from '../commands/add-project.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -53,8 +54,8 @@ program
 program
   .command('add-project')
   .description('添加项目')
-  .action(() => {
-    console.log('ralph add-project - 即将实现');
+  .action(async () => {
+    await runAddProject();
   });
 
 program.action(() => {
