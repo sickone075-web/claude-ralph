@@ -13,6 +13,7 @@ Started: Tue Mar  3 11:21:16     2026
 - shadcn/ui components in `dashboard/src/components/ui/`
 - Flow components (ReactFlow-based) live in `dashboard/src/components/flow/`
 - @xyflow/react styles imported globally in globals.css; ReactFlow components need `"use client"`
+- ReactFlow custom nodes: wrap with `memo()`, export data interface, use `Handle` for connections
 - TypeScript check: `cd dashboard && npx tsc --noEmit`
 
 ---
@@ -40,4 +41,16 @@ Started: Tue Mar  3 11:21:16     2026
   - ReactFlow components require `"use client"` directive in Next.js App Router
   - The `flow/` directory under components is where all flow-related components should live
   - ReactFlow container needs explicit width/height to render properly
+---
+
+## 2026-03-03 - US-003
+- What was implemented: Created `dashboard/src/components/flow/start-node.tsx` — a ReactFlow custom node component displaying project overview at the top of the flow chart. Includes project name, description (truncated to 2 lines), circular progress indicator, Ralph status badge (idle/running/completed/error with iteration info), and branch name.
+- Files changed:
+  - dashboard/src/components/flow/start-node.tsx (new component)
+- **Learnings for future iterations:**
+  - ReactFlow custom nodes use `memo()` wrapping and export typed `NodeProps` with custom data interfaces
+  - Use `Handle` from `@xyflow/react` with `Position.Bottom`/`Position.Top` for connection points
+  - The `statusBadge` mapping and `CircularProgress` pattern from dashboard page.tsx are reused — keep them consistent
+  - Custom node components need `"use client"` directive
+  - SVG gradient IDs must be unique across nodes (used `startNodeProgressGradient` to avoid conflicts)
 ---
