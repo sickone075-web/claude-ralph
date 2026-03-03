@@ -1,0 +1,21 @@
+{
+  "name": "ralph-zh-marketplace",
+  "owner": {
+    "name": "sickone075-web"
+  },
+  "metadata": {
+    "description": "Ralph 自主 agent 系统中文优化版 - 含头脑风暴、交互式澄清和强制需求讨论环节",
+    "version": "1.1.0"
+  },
+  "plugins": [
+    {
+      "name": "ralph-zh-skills",
+      "source": "./",
+      "description": "中文 PRD 生成和转换技能，支持 AskUserQuestion 交互、brainstorming skill 调用和多轮需求讨论",
+      "version": "1.1.0",
+      "keywords": ["ralph", "prd", "中文", "brainstorming", "agent"],
+      "category": "productivity",
+      "skills": "./skills/"
+    }
+  ]
+}
