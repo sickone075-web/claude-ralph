@@ -3,9 +3,17 @@ import fs from "fs";
 import os from "os";
 import crypto from "crypto";
 
+export interface RepoConfig {
+  path: string;
+  type: "docs" | "backend" | "frontend" | "app" | "other";
+  priority: number;
+  checks?: string[];
+}
+
 export interface ProjectConfig {
   name: string;
   path: string;
+  repositories?: Record<string, RepoConfig>;
 }
 
 export interface DashboardConfig {
