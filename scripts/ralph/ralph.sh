@@ -115,6 +115,28 @@ PROGRESS_FILE="$SCRIPT_DIR/progress.txt"
 ARCHIVE_DIR="$SCRIPT_DIR/archive"
 LAST_BRANCH_FILE="$SCRIPT_DIR/.last-branch"
 LOG_FILE="$SCRIPT_DIR/ralph.log"
+PID_FILE="$SCRIPT_DIR/.ralph-pid"
+
+# cleanup() - 清理函数，退出时删除 PID 文件
+cleanup() {
+  rm -f "$PID_FILE"
+}
+trap cleanup EXIT
+
+# 检查是否已有 Ralph 实例在运行
+if [[ -f "$PID_FILE" ]]; then
+  existing_pid="$(cat "$PID_FILE" 2>/dev/null)"
+  if [[ -n "$existing_pid" ]] && kill -0 "$existing_pid" 2>/dev/null; then
+    echo "Error: Ralph is already running (PID $existing_pid)."
+    echo "Use 'kill $existing_pid' to stop it first, or delete $PID_FILE if the process is stale."
+    exit 1
+  fi
+  # PID file exists but process is dead — overwrite
+  rm -f "$PID_FILE"
+fi
+
+# 写入当前进程 PID
+echo $$ > "$PID_FILE"
 
 # log() - 本地日志记录函数
 # 用法: log "INFO" "消息内容"
@@ -320,6 +342,10 @@ check_output_valid() {
 
   return 0
 }
+
+# Clear CLAUDECODE env var to allow spawning fresh claude instances
+# (prevents "nested session" error when ralph.sh is launched from within Claude Code)
+unset CLAUDECODE 2>/dev/null
 
 # Windows: ensure Claude Code can find git-bash
 if [[ -z "$CLAUDE_CODE_GIT_BASH_PATH" ]] && [[ -f "/c/devTools/Git/bin/bash.exe" ]]; then

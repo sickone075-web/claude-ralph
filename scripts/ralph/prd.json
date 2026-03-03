@@ -1,179 +1,104 @@
 {
   "project": "claude-ralph",
-  "branchName": "ralph/dashboard-flow-visualization",
-  "description": "Dashboard 流程图可视化 — 将 Kanban 看板替换为基于 @xyflow/react 的纵向流程图视图，每个 User Story 以交互式节点展示执行状态，支持切换查看历史存档",
+  "branchName": "ralph/unified-start-flow",
+  "description": "启动流程统一化 — 将启停入口统一为 Claude Code Skill（/ralph-start 和 /ralph-stop），Web Dashboard 改为纯状态监控 + 全局配置管理，通过 PID 文件管理进程生命周期",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Story 数据类型扩展 - 新增时间和状态字段",
-      "description": "作为开发者，我需要在 Story 类型中新增时间字段和状态字段，以便记录执行耗时和失败状态。",
+      "title": "ralph.sh PID 文件管理",
+      "description": "作为开发者，我需要 ralph.sh 在启动和退出时管理 PID 文件，以便外部程序（Skill、Dashboard）能检测其运行状态。",
       "acceptanceCriteria": [
-        "Story 类型新增 startedAt?: string（ISO 时间戳）和 completedAt?: string（ISO 时间戳）",
-        "Story 类型新增 status?: 'pending' | 'running' | 'completed' | 'failed'（可选字段，向后兼容）",
-        "prd.json 的读写逻辑兼容新字段（旧数据无这些字段也不报错）",
-        "Dashboard 后端在检测到 story 状态变化时自动写入 startedAt/completedAt 到 prd.json",
-        "类型检查通过"
+        "ralph.sh 启动时将自身 PID 写入 scripts/ralph/.ralph-pid",
+        "使用 trap cleanup EXIT 确保正常退出（exit 0/1/2）和信号终止时删除 .ralph-pid 文件",
+        "ralph.sh 启动时若 .ralph-pid 已存在，检查对应进程是否仍在运行（kill -0）；若已死亡则覆盖，若仍在运行则报错退出",
+        ".ralph-pid 加入 .gitignore"
       ],
       "priority": 1,
       "passes": true,
-      "notes": ""
+      "notes": "此故事为 shell 脚本修改，无 TypeScript 类型检查。使用 kill -0 $pid 检测进程存活。"
     },
     {
       "id": "US-002",
-      "title": "安装 @xyflow/react 依赖到 dashboard",
-      "description": "作为开发者，我需要在 dashboard 项目中安装 @xyflow/react，以便构建流程图画布。",
+      "title": "创建 /ralph-start Skill",
+      "description": "作为用户，我希望在 Claude Code 中输入 /ralph-start 即可启动 Ralph 循环，以便不需要记住脚本路径和参数。",
       "acceptanceCriteria": [
-        "在 dashboard/ 目录执行 npm install @xyflow/react",
-        "在 dashboard/src/app/globals.css 或布局中引入 @xyflow/react/dist/style.css",
-        "创建一个最小的测试组件验证 ReactFlow 渲染正常（可删除）",
-        "类型检查通过"
+        "创建 skills/start/SKILL.md，skill name 为 ralph-start，user-invocable: true",
+        "Skill 指导 Claude Code 读取 ~/.ralph/config.json 获取全局默认参数（defaultTool、defaultMaxIterations、timeoutMinutes、webhookUrl）",
+        "支持可选参数覆盖（如 /ralph-start --tool amp --iterations 5）",
+        "读取当前项目 scripts/ralph/prd.json 统计待完成 story 数量",
+        "检查 .ralph-pid 文件判断是否已有实例运行，已运行则提示当前状态并退出",
+        "如果无待完成 story（全部 passes: true），提示所有任务已完成并退出",
+        "启动前打印摘要：工具、迭代次数、超时时间、待完成 story 数/总数",
+        "后台执行 bash scripts/ralph/ralph.sh --tool X --timeout Y --webhook Z N",
+        "返回 Ralph 已启动 结果"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "Skill 是 markdown 指令文件，指导 Claude Code 使用 Bash 工具和 Read 工具完成流程。后台执行使用 Bash 工具的 run_in_background。"
     },
     {
       "id": "US-003",
-      "title": "起始节点组件",
-      "description": "作为用户，我希望流程图顶部有一个起始节点展示项目概览，以便快速了解整体进度。",
+      "title": "创建 /ralph-stop Skill",
+      "description": "作为用户，我希望在 Claude Code 中输入 /ralph-stop 即可停止正在运行的 Ralph，以便快速中断循环。",
       "acceptanceCriteria": [
-        "新建 dashboard/src/components/flow/start-node.tsx 组件",
-        "起始节点显示：项目名称、描述（截断至 2 行）、整体完成进度（如 3/8 完成）、圆形进度指示器",
-        "显示 Ralph 运行状态 Badge（空闲/运行中/已完成/错误）",
-        "显示分支名称（如有）",
-        "节点样式：zinc-900 背景、zinc-800 边框、cyan/blue 渐变高亮元素",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
+        "创建 skills/stop/SKILL.md，skill name 为 ralph-stop，user-invocable: true",
+        "Skill 指导 Claude Code 读取 scripts/ralph/.ralph-pid 文件",
+        "如果文件不存在或进程已死亡，提示 Ralph 当前未运行",
+        "如果进程存在，执行 kill 终止进程树（Windows 使用 taskkill /pid X /t /f）",
+        "确认进程已终止并清理 .ralph-pid 文件",
+        "返回 Ralph 已停止 结果"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "复用 Dashboard 页现有的 CircularProgress 组件和 statusBadge 配置。"
+      "passes": false,
+      "notes": "Skill 是 markdown 指令文件。需兼容 Windows（taskkill）和 Unix（kill）。"
     },
     {
       "id": "US-004",
-      "title": "Story 节点组件",
-      "description": "作为用户，我希望每个 User Story 以独立节点展示在流程图中，以便一目了然地看到 ID、标题和状态。",
+      "title": "Terminal 页面改为纯监控模式",
+      "description": "作为用户，我希望 Dashboard Terminal 页面只展示运行状态和日志输出，不提供启停操作，以便职责清晰。",
       "acceptanceCriteria": [
-        "新建 dashboard/src/components/flow/story-node.tsx 组件",
-        "节点显示：Story ID（如 US-001）、标题、执行状态图标",
-        "节点状态颜色编码：待处理 zinc-800 灰色边框、执行中 cyan-500 边框+脉冲动画、已完成 green-500 边框+对勾图标、失败 red-500 边框+错误图标",
-        "已完成且有 startedAt/completedAt 的节点显示耗时（如 3m 42s）",
-        "执行中的节点显示运行计时器（实时更新，使用 setInterval）",
-        "节点宽度固定 280px，高度自适应内容",
+        "移除 tool 选择下拉框和 maxIterations 选择下拉框",
+        "移除启动按钮（handleStart）和停止按钮（handleStop）及其逻辑",
+        "移除相关 state：tool、maxIterations、isStarting、isStopping",
+        "移除不再需要的 import（Play、Square 等启停相关图标和 Select 组件）",
+        "更新欢迎消息：将 选择 AI 工具和最大迭代次数然后点击启动 改为 在 Claude Code 中使用 /ralph-start 启动循环",
+        "保留：状态 badge、迭代进度、运行时间、WebSocket 连接状态、实时终端输出、迭代历史 Tab、工具栏、完成摘要",
         "类型检查通过",
         "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "脉冲动画使用 CSS @keyframes pulse-glow 实现。耗时格式化：<60s 显示秒，>=60s 显示 Xm Ys。"
+      "passes": false,
+      "notes": "文件：dashboard/src/app/(dashboard)/terminal/page.tsx。只做减法，不添加新功能。"
     },
     {
       "id": "US-005",
-      "title": "结束节点组件",
-      "description": "作为用户，我希望流程图底部有一个结束节点展示完成汇总。",
+      "title": "Dashboard 通过 PID 文件检测运行状态",
+      "description": "作为用户，我希望无论 Ralph 是通过 Skill 还是其他方式启动的，Dashboard 都能检测到运行状态，以便实时监控。",
       "acceptanceCriteria": [
-        "新建 dashboard/src/components/flow/end-node.tsx 组件",
-        "全部完成时：显示绿色对勾图标 + 全部完成 文案 + 总耗时（从第一个 startedAt 到最后一个 completedAt）",
-        "未完成时：显示灰色虚线边框 + 待完成 + 剩余 story 数量",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
+        "ralph-process.ts 新增 detectRunningFromPid() 函数，读取 .ralph-pid 文件并用 process.kill(pid, 0) 检查进程是否存活",
+        "getRalphStatus() 在内存态无进程时回退调用 detectRunningFromPid() 判断外部启动的 ralph",
+        "ws.ts 的文件监听列表增加 .ralph-pid 文件，PID 文件出现/消失时广播 ralph:status 事件",
+        "当 PID 对应的进程退出后，状态回退为 idle",
+        "类型检查通过"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "EndNode follows same patterns as StartNode/StoryNode: memo(), Handle, NodeProps with custom data interface."
+      "passes": false,
+      "notes": "文件：dashboard/src/lib/ralph-process.ts 和 dashboard/server/ws.ts。Windows 上 process.kill(pid, 0) 也可用于检测进程存活。"
     },
     {
       "id": "US-006",
-      "title": "流程图画布与自动布局",
-      "description": "作为用户，我希望 Story 节点按执行顺序纵向排列并自动连线，以便清晰看到执行流程。",
+      "title": "Start API 支持无参数调用并传递全部参数",
+      "description": "作为 Skill 调用者，我希望 POST /api/ralph/start 支持空 body 调用，自动使用全局配置默认值，并将全部运行参数传递给 ralph.sh。",
       "acceptanceCriteria": [
-        "新建 dashboard/src/components/flow/story-flow.tsx 组件，封装完整的流程图画布",
-        "使用 @xyflow/react 的 ReactFlow 组件渲染画布，支持缩放和平移",
-        "节点纵向排列：起始节点 → Story 节点（按 priority 升序排序）→ 结束节点",
-        "相邻节点间有连线（animated edge），执行中的连线有流动动画效果",
-        "节点间距固定 100px，自动计算每个节点的 y 坐标",
-        "画布初始自动适配内容（fitView），确保所有节点可见",
-        "背景使用 @xyflow/react 的 Background 组件显示点阵网格（深色主题配色）",
-        "注册自定义节点类型：startNode、storyNode、endNode",
-        "接收 stories 数组和 ralphStatus 等 props 动态生成节点和连线",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
+        "POST /api/ralph/start 的 body 可为空 {} 或不提供",
+        "未提供的参数从 ~/.ralph/config.json 读取默认值（defaultTool → tool，defaultMaxIterations → maxIterations）",
+        "提供的参数覆盖全局配置值",
+        "startRalph 函数传递全部运行参数给 ralph.sh（包括 --timeout 和 --webhook）",
+        "类型检查通过"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "不使用 dagre 等布局库，手动计算纵向坐标即可。节点 position 为 { x: 0, y: index * (nodeHeight + gap) }，居中显示。"
-    },
-    {
-      "id": "US-007",
-      "title": "节点点击侧边详情面板",
-      "description": "作为用户，我希望点击 Story 节点后右侧滑出详情面板，查看完整 story 信息。",
-      "acceptanceCriteria": [
-        "新建 dashboard/src/components/flow/story-detail-panel.tsx 组件",
-        "使用 shadcn/ui 的 Sheet 组件实现右侧滑入面板（宽度约 360px）",
-        "面板内容：Story ID、标题、描述、验收标准列表（带 checkbox 展示 passes 状态）、优先级徽标、备注、时间信息（开始/完成/耗时）",
-        "点击面板外部或关闭按钮收起面板",
-        "点击起始/结束节点不弹出面板",
-        "查看存档时面板全部为只读",
-        "在 story-flow.tsx 中集成面板：点击 storyNode 时传递 story 数据并打开面板",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": "检查 shadcn/ui 是否已有 Sheet 组件，若无需先通过 npx shadcn@latest add sheet 安装。"
-    },
-    {
-      "id": "US-008",
-      "title": "顶部项目/存档切换器",
-      "description": "作为用户，我希望在 Dashboard 页顶部通过下拉选择器切换查看当前任务或历史存档的流程图。",
-      "acceptanceCriteria": [
-        "新建 dashboard/src/components/flow/archive-switcher.tsx 组件",
-        "下拉选择器默认选中当前任务（置顶，带特殊标识）",
-        "下拉列表包含所有历史存档（显示功能名+日期+完成度百分比）",
-        "存档数据通过 /api/archives 接口获取列表，通过 /api/archives/:folder 获取详情",
-        "选择存档后流程图切换为该存档的 story 数据（只读模式，无运行动画）",
-        "切换回当前任务恢复实时更新",
-        "切换时有加载状态指示",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": "复用现有的 /api/archives 和 /api/archives/:folder API，无需新建后端接口。"
-    },
-    {
-      "id": "US-009",
-      "title": "Dashboard 页面重构 - 替换 Kanban 为流程图",
-      "description": "作为开发者，我需要将 Dashboard 页面的 Kanban 看板替换为流程图视图，整合所有新组件。",
-      "acceptanceCriteria": [
-        "Dashboard 页面移除 KanbanBoard 组件引用和统计卡片区域",
-        "替换为：顶部存档切换器 + 全屏流程图画布（StoryFlow 组件）",
-        "流程图画布占满页面剩余空间（使用 flex-1 或 calc(100vh - header)）",
-        "保留现有 WebSocket 实时更新机制（ralphStatus、prd:updated 等事件正常触发节点更新）",
-        "Ralph 运行状态变化时节点实时更新颜色和动画",
-        "保留 Loading 骨架屏（适配新布局：显示流程图区域的骨架）",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": "KanbanBoard 组件不要删除文件，Stories 页面和归档页面可能仍在使用。只移除 Dashboard 页面对它的引用。"
-    },
-    {
-      "id": "US-010",
-      "title": "归档页面适配 - 复用流程图组件",
-      "description": "作为开发者，我需要将归档页面中展开的 Kanban 看板替换为流程图组件（只读模式）。",
-      "acceptanceCriteria": [
-        "归档页面展开详情时使用 StoryFlow 组件替代 KanbanBoard",
-        "传入 readOnly=true 属性，流程图为只读模式：不可编辑、无执行动画",
-        "节点显示存档的最终状态：passes=true 为绿色、passes=false 为灰色",
-        "流程图高度自适应内容（根据 story 数量计算高度），不需要单独滚动",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": "StoryFlow already supports readOnly mode. Height auto-calculated using flow constants (START_NODE_HEIGHT + stories * (STORY_NODE_HEIGHT + NODE_GAP) + END_NODE_HEIGHT + padding)."
+      "passes": false,
+      "notes": "文件：dashboard/src/app/api/ralph/start/route.ts 和 dashboard/src/lib/ralph-process.ts。"
     }
   ]
 }

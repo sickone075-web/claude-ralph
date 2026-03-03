@@ -1,140 +1,26 @@
 # Ralph Progress Log
-Started: Tue Mar  3 11:21:16     2026
----
+Started: Tue Mar  3 16:05:19     2026
 
 ## Codebase Patterns
-- Story type is in `dashboard/src/lib/types.ts`, used by all API routes and components
-- PRD read/write uses atomic file operations (tmp + rename) in `dashboard/src/lib/prd-file.ts`
-- API routes at `dashboard/src/app/api/prd/stories/[id]/route.ts` handle story CRUD
-- WebSocket server at `dashboard/server/ws.ts` broadcasts file change events
-- Dashboard uses zustand store at `dashboard/src/lib/store.ts` for state management
-- Dark theme enforced globally: zinc-900 bg, zinc-800 borders, cyan/blue accents
-- Story status determined by: `passes=true` → completed, `id === currentStoryId && ralphRunning` → running, else pending
-- shadcn/ui components in `dashboard/src/components/ui/`
-- Flow components (ReactFlow-based) live in `dashboard/src/components/flow/`
-- @xyflow/react styles imported globally in globals.css; ReactFlow components need `"use client"`
-- ReactFlow custom nodes: wrap with `memo()`, export data interface, use `Handle` for connections
-- TypeScript check: `cd dashboard && npx tsc --noEmit`
-- ReactFlow Node data needs `as unknown as Record<string, unknown>` cast for custom data interfaces
-- `nodeTypes` object must be defined outside component to prevent ReactFlow re-registration warnings
+- PID file path: scripts/ralph/.ralph-pid (SCRIPT_DIR-relative)
+- `kill -0 $pid` works on both Unix and Windows (Git Bash) for process liveness check
+- ralph.sh uses `set -e` + `trap cleanup EXIT` for cleanup on any exit
+- ralph.sh reads config from ~/.ralph/config.json with CLI args as override
 
 ---
 
 ## 2026-03-03 - US-001
-- What was implemented: Extended Story type with `startedAt?: string`, `completedAt?: string`, and `status?: StoryStatus` fields. Updated PUT API route to auto-set timestamps on status transitions (running→startedAt, completed/failed→completedAt, passes=true→completedAt+status).
-- Files changed:
-  - dashboard/src/lib/types.ts (added StoryStatus type and optional fields to Story)
-  - dashboard/src/app/api/prd/stories/[id]/route.ts (auto-timestamp logic in PUT handler)
+- Implemented PID file management in ralph.sh
+- Files changed: scripts/ralph/ralph.sh, .gitignore
+- **What was implemented:**
+  - Added PID_FILE variable pointing to scripts/ralph/.ralph-pid
+  - Added cleanup() function that removes PID file, triggered via `trap cleanup EXIT`
+  - Added startup check: if .ralph-pid exists and process is alive (kill -0), error exit; if dead, overwrite
+  - Writes current PID ($$) to .ralph-pid on startup
+  - Added .ralph-pid to .gitignore
 - **Learnings for future iterations:**
-  - New optional fields are backward-compatible: `readPrd()` uses `JSON.parse` which ignores missing optional fields
-  - The PUT route explicitly picks known fields to write, so new fields must be added there when extending Story
-  - `StoryStatus` is exported from types.ts for reuse in other components
----
-
-## 2026-03-03 - US-002
-- What was implemented: Installed @xyflow/react dependency, imported its styles in globals.css, and created a minimal test component at `dashboard/src/components/flow/react-flow-test.tsx` to verify ReactFlow renders correctly.
-- Files changed:
-  - dashboard/package.json (added @xyflow/react dependency)
-  - dashboard/package-lock.json (lockfile updated)
-  - dashboard/src/app/globals.css (added `@import "@xyflow/react/dist/style.css"`)
-  - dashboard/src/components/flow/react-flow-test.tsx (new test component)
-- **Learnings for future iterations:**
-  - @xyflow/react styles must be imported globally via `@import "@xyflow/react/dist/style.css"` in globals.css
-  - ReactFlow components require `"use client"` directive in Next.js App Router
-  - The `flow/` directory under components is where all flow-related components should live
-  - ReactFlow container needs explicit width/height to render properly
----
-
-## 2026-03-03 - US-003
-- What was implemented: Created `dashboard/src/components/flow/start-node.tsx` — a ReactFlow custom node component displaying project overview at the top of the flow chart. Includes project name, description (truncated to 2 lines), circular progress indicator, Ralph status badge (idle/running/completed/error with iteration info), and branch name.
-- Files changed:
-  - dashboard/src/components/flow/start-node.tsx (new component)
-- **Learnings for future iterations:**
-  - ReactFlow custom nodes use `memo()` wrapping and export typed `NodeProps` with custom data interfaces
-  - Use `Handle` from `@xyflow/react` with `Position.Bottom`/`Position.Top` for connection points
-  - The `statusBadge` mapping and `CircularProgress` pattern from dashboard page.tsx are reused — keep them consistent
-  - Custom node components need `"use client"` directive
-  - SVG gradient IDs must be unique across nodes (used `startNodeProgressGradient` to avoid conflicts)
----
-
-## 2026-03-03 - US-004
-- What was implemented: Created `dashboard/src/components/flow/story-node.tsx` — a ReactFlow custom node for individual User Stories. Displays Story ID, title, status icon with color-coded borders (pending=zinc-800, running=cyan-500+pulse-glow, completed=green-500+check, failed=red-500+X). Running nodes show a live timer; completed nodes show elapsed duration. Added `pulse-glow` CSS keyframe animation in globals.css.
-- Files changed:
-  - dashboard/src/components/flow/story-node.tsx (new component)
-  - dashboard/src/app/globals.css (added @keyframes pulse-glow and .animate-pulse-glow)
-- **Learnings for future iterations:**
-  - Duration formatting helper `formatDuration` uses simple threshold: <60s shows seconds only, >=60s shows Xm Ys
-  - Running timer uses `setInterval` at 1s with cleanup in `useEffect` — standard pattern for real-time counters
-  - `tabular-nums` class ensures timer digits don't shift layout during updates
-  - Node width is fixed at 280px per PRD spec; has both top (target) and bottom (source) Handles
----
-
-## 2026-03-03 - US-005
-- What was implemented: Created `dashboard/src/components/flow/end-node.tsx` — a ReactFlow custom node for the flow chart bottom. Shows green check + "全部完成" + total duration when all stories complete; shows grey dashed border + "待完成" + remaining count otherwise.
-- Files changed:
-  - dashboard/src/components/flow/end-node.tsx (new component)
-- **Learnings for future iterations:**
-  - EndNode only has a top Handle (target) — it's the terminal node in the flow
-  - Total duration calculated from first startedAt to last completedAt across all stories
-  - Duration formatter extended for hours (h/m format) since total project time can exceed 60 minutes
-  - Dashed border style: `border-dashed border-zinc-700` for incomplete state
----
-
-## 2026-03-03 - US-006
-- What was implemented: Created `dashboard/src/components/flow/story-flow.tsx` — the main ReactFlow canvas component that orchestrates all flow nodes. Renders StartNode → StoryNodes (sorted by priority) → EndNode in vertical layout with 100px gaps. Supports animated edges for running stories, fitView, dot grid background, zoom/pan, and click-to-select story nodes.
-- Files changed:
-  - dashboard/src/components/flow/story-flow.tsx (new component)
-- **Learnings for future iterations:**
-  - ReactFlow `Node` data type requires `Record<string, unknown>` — custom data interfaces need `as unknown as Record<string, unknown>` cast
-  - Node positions are manually calculated: `{ x: offset, y: index * (height + gap) }` — no external layout library needed
-  - `nodeTypes` must be defined OUTSIDE the component (constant) to avoid re-renders
-  - StoryFlow accepts `readOnly` prop for archive viewing (disables animations and selection)
-  - `onStoryNodeClick` callback filters for storyNode type only (start/end nodes don't trigger)
-  - `proOptions={{ hideAttribution: true }}` removes ReactFlow watermark
----
-
-## 2026-03-03 - US-007
-- What was implemented: Created `dashboard/src/components/flow/story-detail-panel.tsx` — a right-side slide-in detail panel using shadcn/ui Sheet component. Displays Story ID, title, description, acceptance criteria with check/circle icons, priority badge, time info (start/end/duration), and notes. Integrated into `story-flow.tsx` with useState for selected story and panel open state; clicking a storyNode opens the panel.
-- Files changed:
-  - dashboard/src/components/flow/story-detail-panel.tsx (new component)
-  - dashboard/src/components/flow/story-flow.tsx (added state + StoryDetailPanel integration)
-- **Learnings for future iterations:**
-  - shadcn/ui Sheet component already exists at `dashboard/src/components/ui/sheet.tsx`
-  - Sheet uses Radix Dialog primitive (`radix-ui`) under the hood
-  - Panel state (selectedStory + panelOpen) lives in StoryFlow, not in the panel itself — keeps panel stateless/controlled
-  - StoryFlow wraps ReactFlow + StoryDetailPanel in a Fragment (`<>...</>`) since both need to be siblings
-  - `readOnly` prop passed through to panel for archive viewing mode
----
-
-## 2026-03-03 - US-008
-- What was implemented: Created `dashboard/src/components/flow/archive-switcher.tsx` — a dropdown selector using shadcn/ui Select component that lets users switch between the live project and historical archives. Fetches archive list from `/api/archives` on mount, displays each archive with feature name, date, and completion percentage. Selecting an archive fetches detail from `/api/archives/:folder` and passes stories to parent via callback. Has loading spinner during fetch. Defaults to "当前任务" with cyan Radio icon.
-- Files changed:
-  - dashboard/src/components/flow/archive-switcher.tsx (new component)
-- **Learnings for future iterations:**
-  - ArchiveSwitcher is a controlled component with `onArchiveSelect` and `onCurrentSelect` callbacks — parent decides what to do with the data
-  - Select component from shadcn/ui uses Radix primitives, supports groups/separators/labels for structured dropdowns
-  - Archive data types (`ArchiveItem`, `ArchiveDetail`) are already in `lib/types.ts`
-  - `__current__` sentinel value distinguishes live project from archive folders in select state
----
-
-## 2026-03-03 - US-009
-- What was implemented: Refactored Dashboard page to replace KanbanBoard + stats bento grid with ArchiveSwitcher + full-screen StoryFlow canvas. Header shows title + archive switcher side-by-side. Flow canvas fills remaining viewport height via `flex-1 min-h-0`. Archive state managed with useState — selecting an archive switches StoryFlow to readOnly mode with archive stories; switching back restores live WebSocket updates. Loading skeleton adapted to show flow-like placeholders (start node + story nodes + end node shapes).
-- Files changed:
-  - dashboard/src/app/(dashboard)/dashboard/page.tsx (major rewrite: removed KanbanBoard/stats, added ArchiveSwitcher + StoryFlow)
-- **Learnings for future iterations:**
-  - KanbanBoard component file preserved — it's still used by Stories page and archive page
-  - Dashboard layout uses `flex h-screen` with `main flex-1 overflow-auto`, so child pages can use `h-full` + `flex-1 min-h-0` for full-height content
-  - Archive viewing state is local to the page (useState), not in the zustand store — keeps store focused on real-time data
-  - When `isViewingArchive`, pass `ralphStatus="idle"` and `readOnly=true` to StoryFlow to suppress animations
----
-
-## 2026-03-03 - US-010
-- What was implemented: Replaced KanbanBoard with StoryFlow component in archive page. Added auto-height calculation using flow layout constants (START_NODE_HEIGHT, STORY_NODE_HEIGHT, NODE_GAP, END_NODE_HEIGHT) to size the container based on story count. Passes `readOnly=true` and `ralphStatus="idle"` so nodes show final archived state without animations.
-- Files changed:
-  - dashboard/src/app/(dashboard)/archives/page.tsx (replaced KanbanBoard import/usage with StoryFlow + height calculation)
-- **Learnings for future iterations:**
-  - StoryFlow already fully supports readOnly mode — no additional compact/inline prop needed, just a properly sized container
-  - ReactFlow container height for inline usage: `START_NODE_HEIGHT + NODE_GAP + stories * (STORY_NODE_HEIGHT + NODE_GAP) + END_NODE_HEIGHT + FLOW_PADDING`
-  - `fitView` in StoryFlow automatically adapts content to container size, so calculated height is approximate
-  - Archive PRD data provides all props needed for StoryFlow: project, description, branchName, userStories
+  - PID file is at scripts/ralph/.ralph-pid (SCRIPT_DIR-relative)
+  - `trap cleanup EXIT` covers normal exit, error exit, and signal termination
+  - `kill -0 $pid` works on both Unix and Windows (Git Bash) for process liveness check
+  - ralph.sh uses `set -e` so any unhandled error triggers EXIT trap
 ---
