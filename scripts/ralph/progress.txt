@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- ProjectConfig and RepoConfig types must be kept in sync between src/lib/global-config.ts and dashboard/src/lib/config.ts
 - Root package.json is `claude-ralph`, type: module, bin: `./dist/bin/ralph.js`
 - Root tsconfig.json compiles src/ -> dist/, target ES2020, module ES2020
 - Dashboard is a Next.js app in dashboard/ with its own package.json
@@ -142,4 +143,16 @@ Started: 2026年03月 2日 22:51:22
   - Using specific file paths in `files` (e.g., "scripts/ralph/ralph.sh") is more precise than directory globs for excluding runtime data
   - npm pack --dry-run is essential for verifying package contents before publishing
   - Global install from tgz (npm install -g ./file.tgz) is the definitive test for publish readiness
+---
+
+## 2026-03-03 - US-001 (multi-repo-support)
+- What was implemented: Added RepoConfig interface and optional repositories field to ProjectConfig in both CLI and Dashboard config modules
+- Files changed:
+  - src/lib/global-config.ts - Added RepoConfig interface, added repositories? field to ProjectConfig
+  - dashboard/src/lib/config.ts - Synced RepoConfig interface and repositories? field to ProjectConfig
+- **Learnings for future iterations:**
+  - The prd.json on main branch contains the old PRD from prior feature branch; must write new PRD for current branch
+  - Both root `npm run build` and `cd dashboard && npm run build` must pass for type changes
+  - RepoConfig uses union types for `type` field: 'docs'|'backend'|'frontend'|'app'|'other'
+  - Optional `repositories?` field ensures backward compatibility — existing single-repo projects need no changes
 ---
