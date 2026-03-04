@@ -418,19 +418,35 @@ function stepPluginGuide(): void {
   console.log(OK('  ✓ Skills 目录已就绪'));
   console.log(DIM(`    路径: ${skillsDir}\n`));
 
-  // Try auto-install via claude CLI
+  // Try auto-register via claude CLI
   let installed = false;
+  const pluginName = 'ralph-zh-skills';
+
+  // Check if already registered
   try {
-    execSync(`claude plugins install "${pluginDir}"`, { stdio: 'pipe' });
-    console.log(OK('  ✓ Skills 已自动注册到 Claude Code'));
-    installed = true;
+    const settingsPath = resolve(homedir(), '.claude', 'settings.json');
+    if (existsSync(settingsPath)) {
+      const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
+      const enabled = settings.enabledPlugins ?? {};
+      if (Object.keys(enabled).some(k => k.includes(pluginName))) {
+        console.log(OK('  ✓ Skills 已注册到 Claude Code'));
+        installed = true;
+      }
+    }
   } catch {
-    // claude plugins install may not be the right command, or CLI unavailable
+    // settings.json parse failure, continue with install
   }
 
   if (!installed) {
+    // Set CLAUDE_CODE_GIT_BASH_PATH for Windows if gitBashPath is configured
+    const env = { ...process.env };
+    const config = readConfig();
+    if (config.gitBashPath) {
+      env.CLAUDE_CODE_GIT_BASH_PATH = config.gitBashPath;
+    }
+
     try {
-      execSync(`claude install "${pluginDir}"`, { stdio: 'pipe' });
+      execSync(`claude plugin install ${pluginName}`, { stdio: 'pipe', env });
       console.log(OK('  ✓ Skills 已自动注册到 Claude Code'));
       installed = true;
     } catch {
@@ -440,8 +456,8 @@ function stepPluginGuide(): void {
 
   if (!installed) {
     console.log(WARN('  ⚠ 未能自动注册 Skills，请手动安装：'));
-    console.log(DIM(`    claude install "${pluginDir}"`));
-    console.log(DIM('    或在 Claude Code Marketplace 中搜索 "ralph-zh-skills"\n'));
+    console.log(DIM(`    claude plugin install ${pluginName}`));
+    console.log('');
   }
 
   console.log('  内置 skill：');
