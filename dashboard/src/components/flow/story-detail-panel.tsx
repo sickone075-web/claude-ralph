@@ -23,6 +23,7 @@ import {
   Plus,
   Loader2,
 } from "lucide-react";
+import { StoryLogTab } from "./story-log-tab";
 
 // --- Helpers ---
 
@@ -452,14 +453,9 @@ export function StoryDetailPanel({
             </div>
           </TabsContent>
 
-          {/* Logs Tab - Placeholder */}
-          <TabsContent value="logs" className="px-6 py-5">
-            <div className="flex flex-col items-center justify-center py-16">
-              <ScrollText className="h-10 w-10 mb-3" style={{ color: "#B1ADA1" }} />
-              <p className="text-sm" style={{ color: "#B1ADA1" }}>
-                执行日志将在后续版本中实现
-              </p>
-            </div>
+          {/* Logs Tab */}
+          <TabsContent value="logs" className="px-6 py-5 flex-1 overflow-hidden">
+            <StoryLogTab story={story} />
           </TabsContent>
 
           {/* Git Tab - Placeholder */}

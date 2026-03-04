@@ -16,6 +16,7 @@ Started: Wed Mar  4 01:15:11     2026
 - Express v5 `req.params` returns `string | string[]` — use `as string` cast for single params
 - WebSocket `ralph:output` events now include `storyId` field (string | null)
 - Git-specific API routes are under `/api/git/*` in `dashboard/server/routes/git.ts`
+- WebSocket context: `useWsSubscribe()` from `websocket-provider.tsx` lets any child component subscribe to WS events without creating new connections
 
 ---
 
@@ -83,6 +84,27 @@ Started: Wed Mar  4 01:15:11     2026
   - simple-git `log()` accepts `"--grep"` option to filter commits by message pattern
   - The existing `/api/logs/git` endpoint in logs.ts fetches general git history; the new `/api/git/commits` is for story-specific filtering
   - Git routes are now separate from log routes — `/api/git/*` vs `/api/logs/*`
+---
+
+## 2026-03-04 - US-006
+- Implemented execution log tab in Story detail drawer with WebSocket real-time streaming
+- Created `dashboard/src/components/flow/story-log-tab.tsx` — standalone log tab component
+- Updated `dashboard/src/components/websocket-provider.tsx` — added WebSocket context (useWsSubscribe hook) so child components can subscribe to WS events without creating separate connections
+- Log tab loads historical logs from `GET /api/logs/:storyId` on mount
+- When Story is running, subscribes to `ralph:output` WS events filtered by storyId for real-time log streaming
+- Toolbar with story ID label (JetBrains Mono 11px #999999) and pause/resume autoscroll button (#E0DDD5 border 6px rounded)
+- Log area: #FAFAF7 warm off-white background, JetBrains Mono 11px, lineHeight 1.6
+- Log color coding: commands #B1ADA1, info #666666, Story ID mentions #C15F3C, code additions #22C55E, warnings #F59E0B
+- Live indicator: terracotta pulsing dot + cursor block when Story is running
+- Empty state with centered icon and hint text
+- Updated story-detail-panel.tsx to use StoryLogTab component instead of placeholder
+- TypeScript check passes (only pre-existing server errors remain)
+- Files changed: `dashboard/src/components/flow/story-log-tab.tsx` (new), `dashboard/src/components/websocket-provider.tsx`, `dashboard/src/components/flow/story-detail-panel.tsx`
+- **Learnings for future iterations:**
+  - WebSocket context pattern: WebSocketProvider now exposes `useWsSubscribe()` hook via React context so any child component can subscribe to WS events
+  - The `ralph:output` payload includes `text` (log line content) and `storyId` (which story it belongs to) — filter by storyId to get story-specific logs
+  - Auto-scroll pattern: use a ref on the scroll container and set scrollTop = scrollHeight in a useEffect triggered by log array changes
+  - Log color coding uses regex patterns on raw log text to identify line types (commands, warnings, story references, code additions)
 ---
 
 ## 2026-03-04 - US-005
