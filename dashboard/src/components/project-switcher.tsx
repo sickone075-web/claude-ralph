@@ -17,7 +17,6 @@ import { useDashboardStore } from "@/lib/store";
 interface ProjectConfig {
   name: string;
   path: string;
-  repositories?: Record<string, unknown>;
 }
 
 interface ProjectsData {

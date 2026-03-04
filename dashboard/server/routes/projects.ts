@@ -77,7 +77,7 @@ projectsRouter.put("/active", (req: Request, res: Response) => {
   }
 });
 
-// PUT /api/projects/:name — update project config (e.g. repositories)
+// PUT /api/projects/:name — update project config
 projectsRouter.put("/:name", (req: Request, res: Response) => {
   try {
     const name = decodeURIComponent(req.params.name as string);
@@ -89,9 +89,8 @@ projectsRouter.put("/:name", (req: Request, res: Response) => {
       return;
     }
 
-    const { path: newPath, repositories } = req.body as {
+    const { path: newPath } = req.body as {
       path?: string;
-      repositories?: Record<string, { path: string; type: string; priority: number; checks?: string[] }>;
     };
 
     if (newPath !== undefined) {
@@ -100,10 +99,6 @@ projectsRouter.put("/:name", (req: Request, res: Response) => {
         return;
       }
       project.path = newPath;
-    }
-
-    if (repositories !== undefined) {
-      project.repositories = repositories as ProjectConfig["repositories"];
     }
 
     writeConfig(config);

@@ -104,74 +104,6 @@ if [[ -f "$RALPH_CONFIG_FILE" ]] && command -v jq &>/dev/null; then
 fi
 unset _CLI_TOOL _CLI_MAX_ITERATIONS _CLI_TIMEOUT _CLI_WEBHOOK
 
-# Determine current repo context from active project's repositories config
-# This identifies which repo we're running in and discovers sibling repos
-REPO_INJECT_BLOCK=""
-CURRENT_REPO_TYPE=""
-CURRENT_REPO_NAME=""
-
-if [[ -f "$RALPH_CONFIG_FILE" ]] && command -v jq &>/dev/null; then
-  _active_project="$(jq -r '.activeProject // empty' "$RALPH_CONFIG_FILE" 2>/dev/null)"
-  if [[ -n "$_active_project" ]]; then
-    # Find the active project's repositories
-    _repos_json="$(jq -r --arg name "$_active_project" \
-      '.projects[] | select(.name == $name) | .repositories // empty' \
-      "$RALPH_CONFIG_FILE" 2>/dev/null)"
-
-    if [[ -n "$_repos_json" && "$_repos_json" != "null" ]]; then
-      # Get current working directory (resolve symlinks for reliable matching)
-      _current_dir="$(pwd -P)"
-
-      # Try to match current directory against repo paths
-      _repo_keys="$(echo "$_repos_json" | jq -r 'keys[]' 2>/dev/null)"
-      for _rk in $_repo_keys; do
-        _repo_path="$(echo "$_repos_json" | jq -r --arg k "$_rk" '.[$k].path // empty' 2>/dev/null)"
-        if [[ -n "$_repo_path" ]]; then
-          # Normalize path for comparison (handle Windows/MSYS path differences)
-          _repo_path_normalized="$(cd "$_repo_path" 2>/dev/null && pwd -P || echo "$_repo_path")"
-          if [[ "$_current_dir" == "$_repo_path_normalized" || "$_current_dir" == "$_repo_path_normalized"/* ]]; then
-            CURRENT_REPO_NAME="$_rk"
-            CURRENT_REPO_TYPE="$(echo "$_repos_json" | jq -r --arg k "$_rk" '.[$k].type // empty' 2>/dev/null)"
-            break
-          fi
-        fi
-      done
-
-      # Build injection block with sibling repos info
-      _inject_lines=""
-      _inject_lines+=$'\n\n---\n\n'
-      _inject_lines+="## Sibling Repositories (Same Project: $_active_project)"$'\n\n'
-      _inject_lines+="| Name | Type | Path |"$'\n'
-      _inject_lines+="|------|------|------|"$'\n'
-
-      for _rk in $_repo_keys; do
-        _r_type="$(echo "$_repos_json" | jq -r --arg k "$_rk" '.[$k].type // "other"' 2>/dev/null)"
-        _r_path="$(echo "$_repos_json" | jq -r --arg k "$_rk" '.[$k].path // ""' 2>/dev/null)"
-        _inject_lines+="| $_rk | $_r_type | \`$_r_path\` |"$'\n'
-      done
-
-      # Add special guidance for docs repos
-      _docs_repos=""
-      for _rk in $_repo_keys; do
-        _r_type="$(echo "$_repos_json" | jq -r --arg k "$_rk" '.[$k].type // ""' 2>/dev/null)"
-        if [[ "$_r_type" == "docs" ]]; then
-          _r_path="$(echo "$_repos_json" | jq -r --arg k "$_rk" '.[$k].path // ""' 2>/dev/null)"
-          _docs_repos+="- **$_rk** (docs): \`$_r_path\` — Use the Read tool to access API contracts and documentation files"$'\n'
-        fi
-      done
-
-      if [[ -n "$_docs_repos" ]]; then
-        _inject_lines+=$'\n'"### Documentation Repositories"$'\n\n'
-        _inject_lines+="The following documentation repositories contain API contracts, technical designs, and architecture docs that you can read directly:"$'\n\n'
-        _inject_lines+="$_docs_repos"
-      fi
-
-      REPO_INJECT_BLOCK="$_inject_lines"
-    fi
-  fi
-  unset _active_project _repos_json _current_dir _repo_keys _rk _repo_path _repo_path_normalized _inject_lines _docs_repos _r_type _r_path
-fi
-
 # Validate tool choice
 if [[ "$TOOL" != "amp" && "$TOOL" != "claude" ]]; then
   echo "Error: Invalid tool '$TOOL'. Must be 'amp' or 'claude'."
@@ -482,39 +414,12 @@ while [[ $i -le $MAX_ITERATIONS ]]; do
   log "INFO" "开始迭代 $i / $MAX_ITERATIONS"
 
   # Determine which template to use for claude tool
-  # Priority: 1) repo-local scripts/ralph/ template, 2) global template based on repo type
-  if [[ "$TOOL" == "claude" ]]; then
-    if [[ "$CURRENT_REPO_TYPE" == "docs" ]]; then
-      CLAUDE_TEMPLATE="$SCRIPT_DIR/CLAUDE-docs.md"
-    else
-      CLAUDE_TEMPLATE="$SCRIPT_DIR/CLAUDE.md"
-    fi
-
-    # Check for repo-local template (repo root's own scripts/ralph/)
-    if [[ -n "$CURRENT_REPO_NAME" ]]; then
-      _repo_root_path="$(jq -r --arg name "$(jq -r '.activeProject // empty' "$RALPH_CONFIG_FILE" 2>/dev/null)" \
-        --arg repo "$CURRENT_REPO_NAME" \
-        '.projects[] | select(.name == $name) | .repositories[$repo].path // empty' \
-        "$RALPH_CONFIG_FILE" 2>/dev/null)"
-      if [[ -n "$_repo_root_path" ]]; then
-        if [[ "$CURRENT_REPO_TYPE" == "docs" && -f "$_repo_root_path/scripts/ralph/CLAUDE-docs.md" ]]; then
-          CLAUDE_TEMPLATE="$_repo_root_path/scripts/ralph/CLAUDE-docs.md"
-        elif [[ -f "$_repo_root_path/scripts/ralph/CLAUDE.md" ]]; then
-          CLAUDE_TEMPLATE="$_repo_root_path/scripts/ralph/CLAUDE.md"
-        fi
-      fi
-      unset _repo_root_path
-    fi
-  fi
+  CLAUDE_TEMPLATE="$SCRIPT_DIR/CLAUDE.md"
 
   # 使用 run_with_timeout 执行 AI 工具
   if [[ "$TOOL" == "amp" ]]; then
     run_with_timeout "cat \"$SCRIPT_DIR/prompt.md\" | amp --dangerously-allow-all"
-  elif [[ -n "$REPO_INJECT_BLOCK" ]]; then
-    # Multi-repo: pipe template + injected repo info into claude
-    run_with_timeout "{ cat \"$CLAUDE_TEMPLATE\"; printf '%s' \"$REPO_INJECT_BLOCK\"; } | claude --dangerously-skip-permissions --print"
   else
-    # Single-repo or no repositories config: use template directly
     run_with_timeout "claude --dangerously-skip-permissions --print < \"$CLAUDE_TEMPLATE\""
   fi
   exit_code=$?

@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from "react";
-import { Settings, RotateCcw, Save, Send, Eye, EyeOff, FolderOpen, Plus, Trash2, ChevronDown, ChevronRight, GitBranch } from "lucide-react";
+import { Settings, RotateCcw, Save, Send, Eye, EyeOff, FolderOpen, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,17 +29,9 @@ interface SettingsConfig {
   terminalFontSize: number;
 }
 
-interface RepoConfig {
-  path: string;
-  type: "docs" | "backend" | "frontend" | "app" | "other";
-  priority: number;
-  checks?: string[];
-}
-
 interface ProjectConfig {
   name: string;
   path: string;
-  repositories?: Record<string, RepoConfig>;
 }
 
 const DEFAULTS: SettingsConfig = {
@@ -74,11 +66,6 @@ export default function SettingsPage() {
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectPath, setNewProjectPath] = useState("");
   const [addingProject, setAddingProject] = useState(false);
-  const [expandedProject, setExpandedProject] = useState<string | null>(null);
-  const [showAddRepo, setShowAddRepo] = useState<string | null>(null);
-  const [newRepoName, setNewRepoName] = useState("");
-  const [newRepoPath, setNewRepoPath] = useState("");
-  const [newRepoType, setNewRepoType] = useState<RepoConfig["type"]>("other");
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -219,68 +206,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handleAddRepo = async (projectName: string) => {
-    if (!newRepoName.trim() || !newRepoPath.trim()) {
-      toast.error("请输入仓库名称和路径");
-      return;
-    }
-    const project = projects.find((p) => p.name === projectName);
-    if (!project) return;
-
-    const repos = { ...(project.repositories ?? {}) };
-    repos[newRepoName.trim()] = {
-      path: newRepoPath.trim(),
-      type: newRepoType,
-      priority: Object.keys(repos).length + 1,
-    };
-
-    try {
-      const res = await fetch(`/api/projects/${encodeURIComponent(projectName)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repositories: repos }),
-      });
-      const json = await res.json();
-      if (json.error) {
-        toast.error("添加仓库失败", { description: json.error });
-      } else {
-        setProjects(json.data.projects);
-        setShowAddRepo(null);
-        setNewRepoName("");
-        setNewRepoPath("");
-        setNewRepoType("other");
-        toast.success("仓库已添加");
-      }
-    } catch {
-      toast.error("添加仓库失败");
-    }
-  };
-
-  const handleDeleteRepo = async (projectName: string, repoName: string) => {
-    const project = projects.find((p) => p.name === projectName);
-    if (!project?.repositories) return;
-
-    const repos = { ...project.repositories };
-    delete repos[repoName];
-
-    try {
-      const res = await fetch(`/api/projects/${encodeURIComponent(projectName)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repositories: repos }),
-      });
-      const json = await res.json();
-      if (json.error) {
-        toast.error("删除仓库失败", { description: json.error });
-      } else {
-        setProjects(json.data.projects);
-        toast.success("仓库已删除");
-      }
-    } catch {
-      toast.error("删除仓库失败");
-    }
-  };
-
   const handleTestWebhook = async () => {
     if (!config.webhookUrl) {
       toast.error("请先输入飞书 Webhook URL");
@@ -363,31 +288,18 @@ export default function SettingsPage() {
           ) : (
             <div className="space-y-3">
               {projects.map((project) => {
-                const repoCount = project.repositories ? Object.keys(project.repositories).length : 0;
                 const isActive = project.name === activeProject;
-                const isExpanded = expandedProject === project.name;
                 return (
                   <div
                     key={project.name}
-                    className="rounded-lg border"
+                    className="rounded-lg border p-3"
                     style={{
                       borderColor: isActive ? "#C15F3C" : "#E0DDD5",
                       backgroundColor: isActive ? "#FFFBF7" : "#FAFAF7",
                     }}
                   >
-                    {/* Project header */}
-                    <div className="flex items-center justify-between p-3">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0">
-                        <button
-                          onClick={() => setExpandedProject(isExpanded ? null : project.name)}
-                          className="shrink-0 p-0.5 rounded hover:bg-[#F5F5F0]"
-                        >
-                          {isExpanded ? (
-                            <ChevronDown className="h-4 w-4 text-[#999999]" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-[#999999]" />
-                          )}
-                        </button>
                         <FolderOpen className="h-4 w-4 shrink-0" style={{ color: isActive ? "#C15F3C" : "#999999" }} />
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
@@ -402,7 +314,6 @@ export default function SettingsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 ml-2">
-                        <span className="text-xs text-[#B1ADA1] mr-1">{repoCount} 仓库</span>
                         {!isActive && (
                           <Button
                             variant="ghost"
@@ -424,97 +335,6 @@ export default function SettingsPage() {
                         </Button>
                       </div>
                     </div>
-
-                    {/* Expanded: repository list */}
-                    {isExpanded && (
-                      <div className="px-3 pb-3 border-t border-[#E0DDD5]">
-                        <div className="pt-3 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-[#999999] uppercase tracking-wider">仓库</span>
-                            <button
-                              onClick={() => {
-                                setShowAddRepo(project.name);
-                                setNewRepoName("");
-                                setNewRepoPath("");
-                                setNewRepoType("other");
-                              }}
-                              className="flex items-center gap-1 text-xs text-[#C15F3C] hover:underline"
-                            >
-                              <Plus className="h-3 w-3" />
-                              添加仓库
-                            </button>
-                          </div>
-
-                          {project.repositories && Object.entries(project.repositories).map(([repoName, repo]) => (
-                            <div key={repoName} className="flex items-center justify-between p-2 bg-white rounded border border-[#E0DDD5]">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <GitBranch className="h-3.5 w-3.5 text-[#B1ADA1] shrink-0" />
-                                <span className="text-sm text-[#1A1A18] truncate">{repoName}</span>
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#F5F5F0] text-[#666666] shrink-0">{repo.type}</span>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0 ml-2">
-                                <span className="text-xs text-[#B1ADA1] truncate max-w-[120px]">{repo.path}</span>
-                                <button
-                                  onClick={() => handleDeleteRepo(project.name, repoName)}
-                                  className="p-1 rounded hover:bg-[#FEF2F2]"
-                                >
-                                  <Trash2 className="h-3 w-3 text-[#999999] hover:text-red-500" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-
-                          {(!project.repositories || Object.keys(project.repositories).length === 0) && (
-                            <p className="text-xs text-[#B1ADA1] py-2">暂无仓库配置</p>
-                          )}
-
-                          {/* Add repo inline form */}
-                          {showAddRepo === project.name && (
-                            <div className="p-3 bg-white rounded border border-[#E0DDD5] space-y-2">
-                              <div className="flex gap-2">
-                                <Input
-                                  placeholder="仓库名称"
-                                  value={newRepoName}
-                                  onChange={(e) => setNewRepoName(e.target.value)}
-                                  className={`${inputClassName} text-sm flex-1`}
-                                />
-                                <Select value={newRepoType} onValueChange={(v: RepoConfig["type"]) => setNewRepoType(v)}>
-                                  <SelectTrigger className="bg-white border-[#E0DDD5] w-28 text-sm">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="docs">docs</SelectItem>
-                                    <SelectItem value="backend">backend</SelectItem>
-                                    <SelectItem value="frontend">frontend</SelectItem>
-                                    <SelectItem value="app">app</SelectItem>
-                                    <SelectItem value="other">other</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <Input
-                                placeholder="仓库路径"
-                                value={newRepoPath}
-                                onChange={(e) => setNewRepoPath(e.target.value)}
-                                className={`${inputClassName} text-sm`}
-                              />
-                              <div className="flex justify-end gap-2">
-                                <Button variant="ghost" size="sm" onClick={() => setShowAddRepo(null)} className="text-xs h-7">
-                                  取消
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleAddRepo(project.name)}
-                                  className="text-xs h-7 text-white"
-                                  style={{ backgroundColor: "#C15F3C" }}
-                                >
-                                  添加
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 );
               })}

@@ -3,17 +3,9 @@ import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
-export interface RepoConfig {
-  path: string;
-  type: 'docs' | 'backend' | 'frontend' | 'app' | 'other';
-  priority: number;
-  checks?: string[];
-}
-
 export interface ProjectConfig {
   name: string;
   path: string;
-  repositories?: Record<string, RepoConfig>;
 }
 
 export interface RalphConfig {

@@ -6,9 +6,6 @@ import { dirname, resolve } from 'node:path';
 import { runInit } from '../commands/init.js';
 import { runDashboard } from '../commands/dashboard.js';
 import { runAddProject } from '../commands/add-project.js';
-import { runAddRepo } from '../commands/add-repo.js';
-import { runRemoveRepo } from '../commands/remove-repo.js';
-import { runRunAll } from '../commands/run-all.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -53,28 +50,6 @@ program
     await runAddProject();
   });
 
-program
-  .command('add-repo')
-  .description('为当前活跃项目添加仓库')
-  .action(async () => {
-    await runAddRepo();
-  });
-
-program
-  .command('remove-repo')
-  .description('从当前活跃项目移除仓库')
-  .action(async () => {
-    await runRemoveRepo();
-  });
-
-program
-  .command('run-all')
-  .description('按优先级编排多仓库 ralph 循环')
-  .option('--repo <name>', '只运行指定名称的仓库')
-  .option('--type <type>', '只运行指定类型的仓库 (docs|backend|frontend|app|other)')
-  .action(async (opts) => {
-    await runRunAll({ repo: opts.repo, type: opts.type });
-  });
 
 program.action(() => {
   program.outputHelp();

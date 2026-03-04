@@ -5,10 +5,9 @@ import type { Story } from "../../src/lib/types";
 export const prdRouter = Router();
 
 // GET /api/prd
-prdRouter.get("/", (req: Request, res: Response) => {
+prdRouter.get("/", (_req: Request, res: Response) => {
   try {
-    const repo = (req.query.repo as string) || undefined;
-    const prd = readPrd(repo);
+    const prd = readPrd();
     res.json({ data: prd, error: null });
   } catch (err) {
     if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
@@ -22,15 +21,14 @@ prdRouter.get("/", (req: Request, res: Response) => {
 // PATCH /api/prd
 prdRouter.patch("/", async (req: Request, res: Response) => {
   try {
-    const repo = (req.query.repo as string) || undefined;
     const body = req.body;
-    const prd = readPrd(repo);
+    const prd = readPrd();
 
     if (typeof body.project === "string") prd.project = body.project;
     if (typeof body.branchName === "string") prd.branchName = body.branchName;
     if (typeof body.description === "string") prd.description = body.description;
 
-    await writePrd(prd, repo);
+    await writePrd(prd);
     res.json({ data: prd, error: null });
   } catch (err) {
     if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
@@ -42,10 +40,9 @@ prdRouter.patch("/", async (req: Request, res: Response) => {
 });
 
 // GET /api/prd/stories
-prdRouter.get("/stories", (req: Request, res: Response) => {
+prdRouter.get("/stories", (_req: Request, res: Response) => {
   try {
-    const repo = (req.query.repo as string) || undefined;
-    const prd = readPrd(repo);
+    const prd = readPrd();
     const stories: Story[] = prd.userStories ?? [];
     res.json({ data: stories, error: null });
   } catch (err) {
@@ -60,7 +57,6 @@ prdRouter.get("/stories", (req: Request, res: Response) => {
 // POST /api/prd/stories
 prdRouter.post("/stories", async (req: Request, res: Response) => {
   try {
-    const repo = (req.query.repo as string) || undefined;
     const body = req.body;
 
     if (!body.title || typeof body.title !== "string" || body.title.trim() === "") {
@@ -68,7 +64,7 @@ prdRouter.post("/stories", async (req: Request, res: Response) => {
       return;
     }
 
-    const prd = readPrd(repo);
+    const prd = readPrd();
     const newStory: Story = {
       id: getNextStoryId(prd.userStories),
       title: body.title.trim(),
@@ -80,7 +76,7 @@ prdRouter.post("/stories", async (req: Request, res: Response) => {
     };
 
     prd.userStories.push(newStory);
-    await writePrd(prd, repo);
+    await writePrd(prd);
 
     res.status(201).json({ data: newStory, error: null });
   } catch (err) {
@@ -95,7 +91,6 @@ prdRouter.post("/stories", async (req: Request, res: Response) => {
 // PATCH /api/prd/stories/reorder
 prdRouter.patch("/stories/reorder", async (req: Request, res: Response) => {
   try {
-    const repo = (req.query.repo as string) || undefined;
     const body = req.body;
 
     if (!Array.isArray(body)) {
@@ -103,7 +98,7 @@ prdRouter.patch("/stories/reorder", async (req: Request, res: Response) => {
       return;
     }
 
-    const prd = readPrd(repo);
+    const prd = readPrd();
 
     for (const item of body as Array<{ id: string; priority: number }>) {
       if (typeof item.id !== "string" || typeof item.priority !== "number") continue;
@@ -113,7 +108,7 @@ prdRouter.patch("/stories/reorder", async (req: Request, res: Response) => {
       }
     }
 
-    await writePrd(prd, repo);
+    await writePrd(prd);
     res.json({ data: prd.userStories, error: null });
   } catch (err) {
     if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
@@ -128,8 +123,7 @@ prdRouter.patch("/stories/reorder", async (req: Request, res: Response) => {
 prdRouter.get("/stories/:id", (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const repo = (req.query.repo as string) || undefined;
-    const prd = readPrd(repo);
+    const prd = readPrd();
     const stories: Story[] = prd.userStories ?? [];
     const story = stories.find((s) => s.id === id);
 
@@ -152,9 +146,8 @@ prdRouter.get("/stories/:id", (req: Request, res: Response) => {
 prdRouter.put("/stories/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const repo = (req.query.repo as string) || undefined;
     const body = req.body;
-    const prd = readPrd(repo);
+    const prd = readPrd();
     const index = prd.userStories.findIndex((s) => s.id === id);
 
     if (index === -1) {
@@ -174,7 +167,7 @@ prdRouter.put("/stories/:id", async (req: Request, res: Response) => {
     };
 
     prd.userStories[index] = updated;
-    await writePrd(prd, repo);
+    await writePrd(prd);
 
     res.json({ data: updated, error: null });
   } catch (err) {
@@ -190,8 +183,7 @@ prdRouter.put("/stories/:id", async (req: Request, res: Response) => {
 prdRouter.delete("/stories/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const repo = (req.query.repo as string) || undefined;
-    const prd = readPrd(repo);
+    const prd = readPrd();
     const index = prd.userStories.findIndex((s) => s.id === id);
 
     if (index === -1) {
@@ -200,7 +192,7 @@ prdRouter.delete("/stories/:id", async (req: Request, res: Response) => {
     }
 
     const deleted = prd.userStories.splice(index, 1)[0];
-    await writePrd(prd, repo);
+    await writePrd(prd);
 
     res.json({ data: deleted, error: null });
   } catch (err) {

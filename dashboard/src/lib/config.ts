@@ -3,17 +3,9 @@ import fs from "fs";
 import os from "os";
 import crypto from "crypto";
 
-export interface RepoConfig {
-  path: string;
-  type: "docs" | "backend" | "frontend" | "app" | "other";
-  priority: number;
-  checks?: string[];
-}
-
 export interface ProjectConfig {
   name: string;
   path: string;
-  repositories?: Record<string, RepoConfig>;
 }
 
 export interface DashboardConfig {
@@ -107,43 +99,6 @@ export function getRalphScriptPath(): string {
     return fromDashboard;
   }
   return path.resolve(__dirname, "..", "..", "..", "scripts", "ralph", "ralph.sh");
-}
-
-export interface RepoInfo {
-  name: string;
-  path: string;
-  type: RepoConfig["type"];
-  prdPath: string;
-  pidPath: string;
-}
-
-export function getActiveProjectRepos(): RepoInfo[] | null {
-  const config = getConfig();
-
-  if (!config.activeProject || config.projects.length === 0) {
-    return null;
-  }
-
-  const project = config.projects.find((p) => p.name === config.activeProject);
-  if (!project || !project.repositories) {
-    return null;
-  }
-
-  const repos = Object.entries(project.repositories);
-  if (repos.length === 0) {
-    return null;
-  }
-
-  return repos.map(([name, repo]) => {
-    const scriptsRalphDir = path.join(repo.path, "scripts", "ralph");
-    return {
-      name,
-      path: repo.path,
-      type: repo.type,
-      prdPath: path.join(scriptsRalphDir, "prd.json"),
-      pidPath: path.join(scriptsRalphDir, ".ralph-pid"),
-    };
-  });
 }
 
 export function getActiveProjectPaths(): ActiveProjectPaths | null {

@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { watch, type FSWatcher } from "chokidar";
 import path from "path";
 import { onEvent, getPidFilePath, detectRunningFromPid } from "../src/lib/ralph-process";
-import { getActiveProjectPaths, getActiveProjectRepos } from "../src/lib/config";
+import { getActiveProjectPaths } from "../src/lib/config";
 import { initLogCache, addLogLine, getCurrentStoryId, setCurrentStoryId, detectStoryIdFromOutput, clearLogCache } from "./log-cache";
 
 // Routes
@@ -14,7 +14,6 @@ import { configRouter } from "./routes/config";
 import { projectsRouter } from "./routes/projects";
 import { logsRouter } from "./routes/logs";
 import { archivesRouter } from "./routes/archives";
-import { reposRouter } from "./routes/repos";
 import { gitRouter } from "./routes/git";
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
@@ -29,7 +28,6 @@ app.use("/api/config", configRouter);
 app.use("/api/projects", projectsRouter);
 app.use("/api/logs", logsRouter);
 app.use("/api/archives", archivesRouter);
-app.use("/api/repos", reposRouter);
 app.use("/api/git", gitRouter);
 
 // --- Static SPA files ---
@@ -111,7 +109,7 @@ onEvent((event: string, data: unknown) => {
 // --- File Watcher (from ws.ts) ---
 let debounceTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 let currentWatcher: FSWatcher | null = null;
-let fileEventMap: Record<string, { eventType: string; repo?: string }> = {};
+let fileEventMap: Record<string, { eventType: string }> = {};
 
 function setupFileWatcher() {
   if (currentWatcher) {
@@ -120,115 +118,73 @@ function setupFileWatcher() {
   }
   fileEventMap = {};
 
-  const repos = getActiveProjectRepos();
+  const projectPaths = getActiveProjectPaths();
+  if (!projectPaths) {
+    console.log("[Server] No active project configured, file watching disabled");
+    return;
+  }
 
-  if (repos && repos.length > 0) {
-    const filesToWatch: string[] = [];
+  const filesToWatch = [projectPaths.prdPath, projectPaths.progressPath];
+  fileEventMap[path.resolve(projectPaths.prdPath)] = { eventType: "prd:updated" };
+  fileEventMap[path.resolve(projectPaths.progressPath)] = { eventType: "progress:updated" };
 
-    for (const repo of repos) {
-      const progressPath = path.join(path.dirname(repo.prdPath), "progress.txt");
+  // Also watch the PID file for external start/stop detection
+  const pidPath = getPidFilePath();
+  if (pidPath) {
+    filesToWatch.push(pidPath);
+  }
 
-      fileEventMap[path.resolve(repo.prdPath)] = { eventType: "prd:updated", repo: repo.name };
-      fileEventMap[path.resolve(progressPath)] = { eventType: "progress:updated", repo: repo.name };
-      fileEventMap[path.resolve(repo.pidPath)] = { eventType: "pid:updated", repo: repo.name };
+  currentWatcher = watch(filesToWatch, {
+    ignoreInitial: true,
+    awaitWriteFinish: {
+      stabilityThreshold: 300,
+      pollInterval: 100,
+    },
+  });
 
-      filesToWatch.push(repo.prdPath, progressPath, repo.pidPath);
-    }
+  currentWatcher.on("change", (filePath: string) => {
+    const normalized = path.resolve(filePath);
 
-    currentWatcher = watch(filesToWatch, {
-      ignoreInitial: true,
-      awaitWriteFinish: {
-        stabilityThreshold: 300,
-        pollInterval: 100,
-      },
-    });
-
-    currentWatcher.on("change", (filePath: string) => {
-      const normalized = path.resolve(filePath);
-      const mapping = fileEventMap[normalized];
-      const eventType = mapping?.eventType ?? "file:updated";
-      const repo = mapping?.repo;
-
-      if (debounceTimers[normalized]) {
-        clearTimeout(debounceTimers[normalized]);
-      }
-
-      debounceTimers[normalized] = setTimeout(() => {
-        broadcast(eventType, { file: normalized, ...(repo ? { repo } : {}) });
-        delete debounceTimers[normalized];
-      }, 500);
-    });
-
-    console.log("[Server] Multi-repo mode: watching files for repos:", repos.map(r => r.name).join(", "));
-  } else {
-    const projectPaths = getActiveProjectPaths();
-    if (!projectPaths) {
-      console.log("[Server] No active project configured, file watching disabled");
+    // PID file change → broadcast ralph:status
+    if (pidPath && normalized === path.resolve(pidPath)) {
+      const pidCheck = detectRunningFromPid();
+      broadcast("ralph:status", {
+        status: pidCheck.running ? "running" : "idle",
+      });
       return;
     }
 
-    const filesToWatch = [projectPaths.prdPath, projectPaths.progressPath];
-    fileEventMap[path.resolve(projectPaths.prdPath)] = { eventType: "prd:updated" };
-    fileEventMap[path.resolve(projectPaths.progressPath)] = { eventType: "progress:updated" };
+    const mapping = fileEventMap[normalized];
+    const eventType = mapping?.eventType ?? "file:updated";
 
-    // Also watch the PID file for external start/stop detection
-    const pidPath = getPidFilePath();
-    if (pidPath) {
-      filesToWatch.push(pidPath);
+    if (debounceTimers[normalized]) {
+      clearTimeout(debounceTimers[normalized]);
     }
 
-    currentWatcher = watch(filesToWatch, {
-      ignoreInitial: true,
-      awaitWriteFinish: {
-        stabilityThreshold: 300,
-        pollInterval: 100,
-      },
-    });
+    debounceTimers[normalized] = setTimeout(() => {
+      broadcast(eventType, { file: normalized });
+      delete debounceTimers[normalized];
+    }, 500);
+  });
 
-    currentWatcher.on("change", (filePath: string) => {
-      const normalized = path.resolve(filePath);
-
-      // PID file change → broadcast ralph:status
-      if (pidPath && normalized === path.resolve(pidPath)) {
-        const pidCheck = detectRunningFromPid();
-        broadcast("ralph:status", {
-          status: pidCheck.running ? "running" : "idle",
-        });
-        return;
+  // PID file created → ralph started externally
+  currentWatcher.on("add", (filePath: string) => {
+    if (pidPath && path.resolve(filePath) === path.resolve(pidPath)) {
+      const pidCheck = detectRunningFromPid();
+      if (pidCheck.running) {
+        broadcast("ralph:status", { status: "running" });
       }
+    }
+  });
 
-      const mapping = fileEventMap[normalized];
-      const eventType = mapping?.eventType ?? "file:updated";
+  // PID file deleted → ralph stopped
+  currentWatcher.on("unlink", (filePath: string) => {
+    if (pidPath && path.resolve(filePath) === path.resolve(pidPath)) {
+      broadcast("ralph:status", { status: "idle" });
+    }
+  });
 
-      if (debounceTimers[normalized]) {
-        clearTimeout(debounceTimers[normalized]);
-      }
-
-      debounceTimers[normalized] = setTimeout(() => {
-        broadcast(eventType, { file: normalized });
-        delete debounceTimers[normalized];
-      }, 500);
-    });
-
-    // PID file created → ralph started externally
-    currentWatcher.on("add", (filePath: string) => {
-      if (pidPath && path.resolve(filePath) === path.resolve(pidPath)) {
-        const pidCheck = detectRunningFromPid();
-        if (pidCheck.running) {
-          broadcast("ralph:status", { status: "running" });
-        }
-      }
-    });
-
-    // PID file deleted → ralph stopped
-    currentWatcher.on("unlink", (filePath: string) => {
-      if (pidPath && path.resolve(filePath) === path.resolve(pidPath)) {
-        broadcast("ralph:status", { status: "idle" });
-      }
-    });
-
-    console.log("[Server] Watching files:", filesToWatch);
-  }
+  console.log("[Server] Watching files:", filesToWatch);
 }
 
 setupFileWatcher();
