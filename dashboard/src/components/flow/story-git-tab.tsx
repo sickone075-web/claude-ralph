@@ -22,16 +22,21 @@ function formatRelativeTime(dateStr: string): string {
 
 interface StoryGitTabProps {
   story: Story;
+  branchName?: string;
 }
 
-export function StoryGitTab({ story }: StoryGitTabProps) {
+export function StoryGitTab({ story, branchName }: StoryGitTabProps) {
   const [commits, setCommits] = useState<GitCommit[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
     setCommits([]);
-    fetch(`/api/git/commits?storyId=${encodeURIComponent(story.id)}`)
+    let url = `/api/git/commits?storyId=${encodeURIComponent(story.id)}`;
+    if (branchName) {
+      url += `&branch=${encodeURIComponent(branchName)}`;
+    }
+    fetch(url)
       .then((res) => res.json())
       .then((json) => {
         if (json.data) {
@@ -40,7 +45,7 @@ export function StoryGitTab({ story }: StoryGitTabProps) {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [story.id]);
+  }, [story.id, branchName]);
 
   if (loading) {
     return (

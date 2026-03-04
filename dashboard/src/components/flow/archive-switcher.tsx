@@ -18,7 +18,7 @@ const CURRENT_VALUE = "__current__";
 
 export interface ArchiveSwitcherProps {
   /** Called when switching to an archive; passes the archive stories (read-only) */
-  onArchiveSelect: (stories: Story[], archiveLabel: string) => void;
+  onArchiveSelect: (stories: Story[], archiveLabel: string, branchName?: string) => void;
   /** Called when switching back to the current (live) project */
   onCurrentSelect: () => void;
 }
@@ -68,7 +68,7 @@ export function ArchiveSwitcher({
           const label = archive
             ? `${archive.featureName} (${archive.date})`
             : value;
-          onArchiveSelect(json.data.prd.userStories, label);
+          onArchiveSelect(json.data.prd.userStories, label, json.data.prd.branchName);
         }
       } catch {
         // revert on error

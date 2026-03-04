@@ -56,6 +56,7 @@ interface StoryDetailPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   readOnly?: boolean;
+  branchName?: string;
 }
 
 export function StoryDetailPanel({
@@ -63,6 +64,7 @@ export function StoryDetailPanel({
   open,
   onOpenChange,
   readOnly = false,
+  branchName,
 }: StoryDetailPanelProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -462,7 +464,7 @@ export function StoryDetailPanel({
 
           {/* Git Tab */}
           <TabsContent value="git" className="px-6 py-5 flex-1 overflow-y-auto">
-            <StoryGitTab story={story} />
+            <StoryGitTab story={story} branchName={branchName} />
           </TabsContent>
 
           {/* Timeline Tab */}

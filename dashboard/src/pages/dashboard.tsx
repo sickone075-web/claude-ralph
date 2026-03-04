@@ -2,6 +2,7 @@
 import { useState, useCallback } from "react";
 import { LayoutDashboard } from "lucide-react";
 import { ArchiveSwitcher } from "@/components/flow/archive-switcher";
+import { ProjectSwitcher } from "@/components/project-switcher";
 import { StoryFlow } from "@/components/flow/story-flow";
 import { RepoOverviewCards } from "@/components/repo-overview-cards";
 import { useDashboardStore } from "@/lib/store";
@@ -14,13 +15,15 @@ export default function DashboardPage() {
   // Archive state: when viewing an archive, stories come from the archive
   const [archiveStories, setArchiveStories] = useState<Story[] | null>(null);
   const [archiveLabel, setArchiveLabel] = useState<string | null>(null);
+  const [archiveBranchName, setArchiveBranchName] = useState<string | undefined>(undefined);
 
   const isViewingArchive = archiveStories !== null;
 
   const handleArchiveSelect = useCallback(
-    (stories: Story[], label: string) => {
+    (stories: Story[], label: string, branchName?: string) => {
       setArchiveStories(stories);
       setArchiveLabel(label);
+      setArchiveBranchName(branchName);
     },
     []
   );
@@ -28,6 +31,7 @@ export default function DashboardPage() {
   const handleCurrentSelect = useCallback(() => {
     setArchiveStories(null);
     setArchiveLabel(null);
+    setArchiveBranchName(undefined);
   }, []);
 
   if (!prd) {
@@ -66,6 +70,7 @@ export default function DashboardPage() {
   }
 
   const stories = isViewingArchive ? archiveStories : (prd.userStories ?? []);
+  const effectiveBranchName = isViewingArchive ? archiveBranchName : prd.branchName;
 
   // Determine which story Ralph is currently working on (only for live view)
   const currentStoryId =
@@ -75,7 +80,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header with Archive Switcher */}
+      {/* Header with Project Switcher + Archive Switcher */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#E0DDD5] bg-white shrink-0">
         <div className="flex items-center gap-3">
           <LayoutDashboard className="h-5 w-5 text-[#B1ADA1]" />
@@ -87,6 +92,9 @@ export default function DashboardPage() {
               </span>
             )}
           </h1>
+          <div className="ml-2">
+            <ProjectSwitcher />
+          </div>
         </div>
         <ArchiveSwitcher
           onArchiveSelect={handleArchiveSelect}
@@ -103,7 +111,7 @@ export default function DashboardPage() {
           stories={stories}
           projectName={prd.project ?? "加载中..."}
           description={prd.description ?? ""}
-          branchName={prd.branchName}
+          branchName={effectiveBranchName}
           ralphStatus={isViewingArchive ? "idle" : ralphStatus}
           iteration={isViewingArchive ? undefined : iteration}
           totalIterations={isViewingArchive ? undefined : totalIterations}

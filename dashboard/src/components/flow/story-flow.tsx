@@ -362,6 +362,7 @@ export function StoryFlow({
         open={panelOpen}
         onOpenChange={setPanelOpen}
         readOnly={readOnly}
+        branchName={branchName}
       />
     </>
   );
