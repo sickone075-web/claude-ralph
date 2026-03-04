@@ -208,3 +208,22 @@ Started: Wed Mar  4 01:15:11     2026
   - kanban-board, kanban-card, project-switcher, story-sheet, story-edit-dialog still have dark theme colors — they may be cleaned up in US-012 if unused
   - The `font-serif` Tailwind class maps to `var(--font-serif)` which is Cormorant Garamond — use for headings
 ---
+
+## 2026-03-04 - US-011
+- Redesigned all three flow chart node components with Claude light theme
+- **start-node.tsx**: White card with 12px rounded corners, subtle shadow, left 48x48 terracotta (#C15F3C) icon square with white Play icon, project name in Cormorant Garamond 16px 600, linear progress bar (#ECEAE5 bg + #C15F3C fill), status badges with light tint backgrounds
+- **story-node.tsx**: 4 states redesigned — Completed (green border #22C55E33, check in #ECFDF5 circle, green ID), Running (terracotta border 1.5px, warm glow shadow, loader in #FEF0E8 circle, terracotta ID + timer), Pending (#E0DDD5 border, muted dot in #F5F5F0 circle, muted text), Failed (red border #EF444433, X in #FEF2F2 circle, red ID)
+- **end-node.tsx**: Compact 120x64 white card, 12px rounded, flag icon + "End" text in #B1ADA1, green accent when all completed
+- Updated connection line strokeWidth from 2 to 1.5px (edge colors already correct from US-010)
+- All handle styles updated: border #E0DDD5, bg #C15F3C (replacing zinc-700/cyan-500)
+- Running node pulse animation (`animate-pulse-glow`) already uses terracotta shadow from US-010 globals.css update
+- TypeScript check passes (only pre-existing server errors remain)
+- Vite build passes
+- Files changed: `dashboard/src/components/flow/start-node.tsx`, `dashboard/src/components/flow/story-node.tsx`, `dashboard/src/components/flow/end-node.tsx`, `dashboard/src/components/flow/story-flow.tsx`
+- **Learnings for future iterations:**
+  - Start node switched from circular SVG progress to linear bar — simpler and more aligned with Claude aesthetic
+  - Story node uses 32px round icon circles for status (not square blocks) — matches the design system spec
+  - End node simplified to 120x64 card with flag + "End" text — much cleaner than the old two-state (completed/pending) design
+  - All hardcoded zinc/cyan colors in flow nodes are now replaced — no more dark theme remnants in flow components
+  - Handle styling uses `!border-[#E0DDD5] !bg-[#C15F3C]` pattern for React Flow handles
+---
