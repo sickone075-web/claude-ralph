@@ -26,15 +26,19 @@ const EXTERNAL_SKILLS = [
   {
     name: 'superpowers',
     key: 'superpowers@superpowers-marketplace',
-    description: '工作流增强（brainstorming、code-review、debugging 等）',
+    description: 'ralph:prd 的 brainstorming 头脑风暴依赖',
+    installCmd: '/install-plugin superpowers-marketplace',
     installHint: '在 Claude Code 中运行: /install-plugin superpowers-marketplace',
+    usedBy: ['ralph:prd'],
     required: false,
   },
   {
     name: 'dev-browser',
     keyPattern: 'dev-browser',
-    description: '浏览器测试（UI 故事验证必需）',
+    description: 'UI 故事浏览器验证（ralph:prd 和 ralph:task 依赖）',
+    installCmd: '',
     installHint: '在 Claude Code 中搜索并安装 dev-browser 插件',
+    usedBy: ['ralph:prd', 'ralph:task'],
     required: false,
   },
 ] as const;
@@ -440,9 +444,13 @@ function stepPluginGuide(): void {
     console.log(DIM('    或在 Claude Code Marketplace 中搜索 "ralph-zh-skills"\n'));
   }
 
-  console.log('  可用的 skill：');
-  console.log(BRAND('    /prd') + '   — 生成产品需求文档（含头脑风暴和需求讨论）');
-  console.log(BRAND('    /ralph') + ' — 将 PRD 转换为 prd.json 任务格式');
+  console.log('  内置 skill：');
+  console.log(BRAND('    /ralph:prd')    + '    — 生成产品需求文档（含头脑风暴和需求讨论）');
+  console.log(BRAND('    /ralph:task')   + '   — 将 PRD 转换为 prd.json 任务格式');
+  console.log(BRAND('    /ralph:init')   + '   — 首次初始化项目 AI 上下文（生成 CLAUDE.md）');
+  console.log(BRAND('    /ralph:update') + ' — 增量更新项目 AI 上下文（合并 Codebase Patterns）');
+  console.log(BRAND('    /ralph:start')  + '  — 启动 Ralph 自主 agent 循环');
+  console.log(BRAND('    /ralph:stop')   + '   — 停止 Ralph 自主 agent 循环');
   console.log('');
 }
 
@@ -469,26 +477,33 @@ function checkInstalledPlugins(): Record<string, boolean> {
 }
 
 function stepExternalSkills(): void {
-  console.log(chalk.bold('\n  🧩 外部 Skills 检测\n'));
+  console.log(chalk.bold('\n  🧩 依赖 Skills 检测\n'));
+  console.log(DIM('  以下外部 Skills 被 Ralph 内置 skill 依赖：\n'));
 
   const installed = checkInstalledPlugins();
-  let allInstalled = true;
+  const missing: typeof EXTERNAL_SKILLS[number][] = [];
 
   for (const skill of EXTERNAL_SKILLS) {
+    const usedByStr = DIM(`(${skill.usedBy.join(', ')} 使用)`);
     if (installed[skill.name]) {
-      console.log(OK(`  ✓ ${skill.name} — ${skill.description}`));
+      console.log(OK(`  ✓ ${skill.name}`) + ` — ${skill.description} ${usedByStr}`);
     } else {
-      allInstalled = false;
-      console.log(WARN(`  ⚠ ${skill.name} 未检测到 — ${skill.description}`));
-      console.log(DIM(`    ${skill.installHint}`));
+      missing.push(skill);
+      console.log(WARN(`  ✗ ${skill.name}`) + ` — ${skill.description} ${usedByStr}`);
     }
   }
 
-  if (allInstalled) {
-    console.log(OK('\n  所有推荐 Skills 已就绪'));
+  if (missing.length === 0) {
+    console.log(OK('\n  所有依赖 Skills 已就绪'));
   } else {
-    console.log(DIM('\n  缺少的 Skills 不影响基础功能，但部分高级功能（如 UI 浏览器验证）将不可用'));
-    console.log(DIM('  可稍后在 Claude Code 中安装'));
+    console.log(chalk.bold('\n  安装缺失的 Skills：\n'));
+    for (const skill of missing) {
+      console.log(`  ${chalk.bold(skill.name)}:`);
+      console.log(DIM(`    ${skill.installHint}`));
+    }
+    console.log(DIM('\n  缺少的 Skills 不影响基础功能，但部分能力将受限：'));
+    console.log(DIM('    • 无 superpowers → ralph:prd 跳过 brainstorming 阶段'));
+    console.log(DIM('    • 无 dev-browser → UI 故事无法进行浏览器验证'));
   }
   console.log('');
 }

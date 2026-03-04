@@ -1,10 +1,10 @@
 {
-  "name": "ralph-zh-skills",
-  "version": "1.1.0",
-  "description": "Ralph 自主 agent 系统中文优化版 - 中文 PRD 生成（含头脑风暴和需求讨论）并转换为 prd.json 格式",
+  "name": "ralph-skills",
+  "version": "2.0.0",
+  "description": "Ralph 自主 agent 系统技能集 — PRD 生成、任务转换、循环控制、项目初始化",
   "author": {
     "name": "sickone075-web"
   },
   "skills": "../skills/",
-  "keywords": ["ralph", "prd", "中文", "automation", "agent", "brainstorming", "requirements"]
+  "keywords": ["ralph", "prd", "init", "automation", "agent", "中文"]
 }
