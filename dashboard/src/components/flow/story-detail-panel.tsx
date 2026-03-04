@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { StoryLogTab } from "./story-log-tab";
 import { StoryGitTab } from "./story-git-tab";
+import { StoryTimelineTab } from "./story-timeline-tab";
 
 // --- Helpers ---
 
@@ -464,14 +465,9 @@ export function StoryDetailPanel({
             <StoryGitTab story={story} />
           </TabsContent>
 
-          {/* Timeline Tab - Placeholder */}
-          <TabsContent value="timeline" className="px-6 py-5">
-            <div className="flex flex-col items-center justify-center py-16">
-              <Clock className="h-10 w-10 mb-3" style={{ color: "#B1ADA1" }} />
-              <p className="text-sm" style={{ color: "#B1ADA1" }}>
-                状态时间线将在后续版本中实现
-              </p>
-            </div>
+          {/* Timeline Tab */}
+          <TabsContent value="timeline" className="px-6 py-5 flex-1 overflow-y-auto">
+            <StoryTimelineTab story={story} />
           </TabsContent>
         </Tabs>
       </SheetContent>
