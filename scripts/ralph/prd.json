@@ -153,7 +153,7 @@
         "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "参照 design-system/MASTER.md 的配色和字体规范。时间线用纯 CSS + div 实现，无需额外组件库。使用 setInterval 实现运行中的实时计时器。Story 类型定义在 dashboard/src/lib/types.ts 中已有 startedAt 和 completedAt 字段。"
     },
     {
@@ -171,7 +171,7 @@
         "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "参照 design-system/MASTER.md 的 Header Bar 章节和 pencil-ralph.pen 的 'Dashboard - Main View' 屏中 Header 右侧的 Archives 按钮设计。archive-switcher.tsx 已存在并在 dashboard.tsx 中使用。"
     },
     {

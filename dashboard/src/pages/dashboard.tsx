@@ -34,30 +34,30 @@ export default function DashboardPage() {
     return (
       <div className="flex flex-col h-full">
         {/* Header Skeleton */}
-        <div className="flex items-center justify-between p-4 border-b border-zinc-800 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E0DDD5] bg-white shrink-0">
           <div className="flex items-center gap-3">
-            <LayoutDashboard className="h-5 w-5 text-zinc-400" />
-            <h1 className="text-2xl font-semibold text-zinc-100">仪表盘</h1>
+            <LayoutDashboard className="h-5 w-5 text-[#B1ADA1]" />
+            <h1 className="text-xl font-semibold text-[#1A1A18]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>仪表盘</h1>
           </div>
-          <div className="h-9 w-[320px] bg-zinc-800 rounded-md animate-pulse" />
+          <div className="h-9 w-[200px] bg-[#F5F5F0] rounded-lg animate-pulse" />
         </div>
 
         {/* Flow Canvas Skeleton */}
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center bg-[#F5F5F0]">
           <div className="space-y-6">
             {/* Start node skeleton */}
-            <div className="w-[320px] h-[180px] bg-zinc-800/50 rounded-lg animate-pulse" />
+            <div className="w-[320px] h-[180px] bg-white rounded-xl shadow-sm animate-pulse" />
             {/* Story node skeletons */}
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex flex-col items-center gap-3">
-                <div className="w-px h-6 bg-zinc-700" />
-                <div className="w-[280px] h-[72px] bg-zinc-800/50 rounded-lg animate-pulse" />
+                <div className="w-px h-6 bg-[#E0DDD5]" />
+                <div className="w-[280px] h-[72px] bg-white rounded-xl shadow-sm animate-pulse" />
               </div>
             ))}
             {/* End node skeleton */}
             <div className="flex flex-col items-center gap-3">
-              <div className="w-px h-6 bg-zinc-700" />
-              <div className="w-[280px] h-[80px] bg-zinc-800/50 rounded-lg border border-dashed border-zinc-700 animate-pulse" />
+              <div className="w-px h-6 bg-[#E0DDD5]" />
+              <div className="w-[280px] h-[80px] bg-white rounded-xl border border-dashed border-[#E0DDD5] animate-pulse" />
             </div>
           </div>
         </div>
@@ -76,13 +76,13 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header with Archive Switcher */}
-      <div className="flex items-center justify-between p-4 border-b border-zinc-800 shrink-0">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-[#E0DDD5] bg-white shrink-0">
         <div className="flex items-center gap-3">
-          <LayoutDashboard className="h-5 w-5 text-zinc-400" />
-          <h1 className="text-2xl font-semibold text-zinc-100">
+          <LayoutDashboard className="h-5 w-5 text-[#B1ADA1]" />
+          <h1 className="text-xl font-semibold text-[#1A1A18]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
             仪表盘
             {archiveLabel && (
-              <span className="text-base font-normal text-zinc-500 ml-2">
+              <span className="text-base font-normal text-[#999999] ml-2">
                 — {archiveLabel}
               </span>
             )}

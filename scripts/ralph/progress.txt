@@ -124,6 +124,27 @@ Started: Wed Mar  4 01:15:11     2026
   - Git commits API returns data in `{ data: GitCommit[] }` wrapper matching the `ApiResponse<T>` pattern
 ---
 
+## 2026-03-04 - US-008
+- Created `dashboard/src/components/flow/story-timeline-tab.tsx` — vertical timeline component for Story status changes
+- Updated `dashboard/src/components/flow/story-detail-panel.tsx` — replaced timeline placeholder with StoryTimelineTab component
+- Timeline shows: "创建任务" (pending), "开始执行" (running), "执行完成"/"执行失败" events
+- Timeline node dot colors match status: pending #B1ADA1, running #C15F3C, completed #22C55E, failed #EF4444
+- Connection line #E0DDD5, event labels Inter 13px #1A1A18, timestamps JetBrains Mono 11px #999999
+- Duration between adjacent events shown as "耗时 X 分 Y 秒"
+- Total duration summary shown at top in #FAFAF7 box
+- Running stories: live timer updates every second via setInterval, displayed in terracotta #C15F3C
+- Running status dot has pulse animation (timeline-pulse keyframe)
+- Empty state when no startedAt data available
+- Data sourced from Story object's `startedAt` and `completedAt` fields
+- TypeScript check passes (only pre-existing server errors remain)
+- Files changed: `dashboard/src/components/flow/story-timeline-tab.tsx` (new), `dashboard/src/components/flow/story-detail-panel.tsx`
+- **Learnings for future iterations:**
+  - Tab components follow consistent pattern: props `{ story: Story }`, build UI from story data, handle empty/loading states
+  - `useLiveElapsed` hook pattern: useRef for interval + cleanup in useEffect, controlled by `active` boolean
+  - Timeline events are derived from Story fields (startedAt, completedAt, status) — no separate API call needed
+  - Inline `<style>` tag for keyframe animations works well for component-scoped CSS animations
+---
+
 ## 2026-03-04 - US-005
 - Implemented enhanced Story detail drawer component (story-detail-panel.tsx)
 - Full rewrite: Sheet-based right-side drawer, 560px width, white bg with warm shadow
@@ -140,4 +161,23 @@ Started: Wed Mar  4 01:15:11     2026
   - Tab styling override uses `variant="line"` on TabsList plus custom CSS class `.tab-trigger-claude` for Claude theme colors
   - The `after` pseudo-element from the base Tabs component provides underline on active state — custom CSS overrides its color to terracotta
   - Edit state uses PUT /api/prd/stories/:id endpoint (not PATCH /api/prd) — this endpoint exists in prd.ts routes
+---
+
+## 2026-03-04 - US-009
+- Updated archive-switcher.tsx from dark theme (zinc-800/900) to Claude light theme
+- Archive Switcher: white bg, #E0DDD5 border, rounded-lg (8px), hover #ECEAE5 border transition
+- Dropdown content: white bg, #E0DDD5 border, focus items use #F5F5F0 bg
+- Current task indicator uses terracotta #C15F3C Radio icon; archive items use #999999 Archive icon
+- Archive list items show: feature name, date, completion percentage, and story count (completed/total)
+- Updated dashboard.tsx header from dark theme to Claude light theme: white bg, #E0DDD5 border-b
+- Header title uses Cormorant Garamond serif font, #1A1A18 text, LayoutDashboard icon #B1ADA1
+- Skeleton states updated to match light theme (white cards, #F5F5F0 bg, #E0DDD5 borders)
+- Archive switching functionality was already fully wired: selecting archive loads stories into StoryFlow with readOnly mode
+- TypeScript check passes (only pre-existing server errors remain)
+- Files changed: `dashboard/src/components/flow/archive-switcher.tsx`, `dashboard/src/pages/dashboard.tsx`
+- **Learnings for future iterations:**
+  - The archive switcher was already fully functional — just needed visual theme update from dark to light
+  - Select component from shadcn/ui supports `focus:bg-[color]` and `focus:text-[color]` classes for item hover styling
+  - Dashboard header and archive-switcher styling should stay in sync with the Claude light theme palette
+  - Archive data flow: dashboard.tsx manages archiveStories/archiveLabel state → passes to StoryFlow which is a pure presentation component
 ---
