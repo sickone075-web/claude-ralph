@@ -8,6 +8,9 @@ Started: Wed Mar  4 01:15:11     2026
 - Pre-existing TS errors in `server/routes/archives.ts` and `server/routes/projects.ts` (string | string[] type issues) — not introduced by this work
 - Sidebar nav items are defined in `dashboard/src/components/sidebar.tsx` as a `navItems` array
 - Project uses Tailwind v4 with CSS variables in `dashboard/src/globals.css`
+- Claude Light Theme: all CSS variables are hex-based (not oklch), defined in `:root` and `.dark` blocks in globals.css
+- Font stack: Inter (UI), JetBrains Mono (code/data), Cormorant Garamond (headings/serif) — imported via Google Fonts in index.html
+- `--font-serif` CSS variable available for Cormorant Garamond via `var(--font-serif)` or `font-serif` Tailwind class
 - WebSocket provider wraps dashboard layout in router.tsx
 - Dashboard source is at `dashboard/` from repo root (NOT under `scripts/ralph/dashboard/`)
 - Design system reference is at `design-system/MASTER.md` from repo root
@@ -180,4 +183,28 @@ Started: Wed Mar  4 01:15:11     2026
   - Select component from shadcn/ui supports `focus:bg-[color]` and `focus:text-[color]` classes for item hover styling
   - Dashboard header and archive-switcher styling should stay in sync with the Claude light theme palette
   - Archive data flow: dashboard.tsx manages archiveStories/archiveLabel state → passes to StoryFlow which is a pure presentation component
+---
+
+## 2026-03-04 - US-010
+- Updated globals.css `:root` and `.dark` CSS variables from oklch to hex-based Claude light theme palette
+- Background #F5F5F0 (warm cream), cards #FFFFFF, accent #C15F3C (terracotta), border #E0DDD5
+- Removed `class="dark"` from index.html `<html>` tag
+- Replaced Google Fonts: Geist → Inter + JetBrains Mono + Cormorant Garamond
+- Added `--font-serif` CSS variable and `--font-serif` theme token for Cormorant Garamond
+- Updated brand colors from cyan/blue to terracotta in all animations (glow, pulse-glow, card-glow, gradient-border)
+- Updated skeleton background from oklch dark to warm #ECEAE5
+- Updated settings.tsx: all zinc-900/800/700 → white/E0DDD5, save button from cyan gradient to terracotta solid
+- Updated ralph-status-indicator.tsx: zinc-500/cyan-500 → Claude theme status colors
+- Updated repo-overview-cards.tsx: all zinc/cyan references → Claude light theme colors
+- Updated story-flow.tsx: edge stroke colors #3f3f46→#E0DDD5, running edges #06B6D4→#C15F3C, background dots #27272a→#E0DDD5
+- Updated slider.tsx: range fill from cyan-to-blue gradient → solid terracotta
+- TypeScript check passes (only pre-existing server errors remain)
+- Vite build passes
+- Files changed: `dashboard/index.html`, `dashboard/src/globals.css`, `dashboard/src/pages/settings.tsx`, `dashboard/src/components/ralph-status-indicator.tsx`, `dashboard/src/components/repo-overview-cards.tsx`, `dashboard/src/components/flow/story-flow.tsx`, `dashboard/src/components/ui/slider.tsx`
+- **Learnings for future iterations:**
+  - The `.dark` CSS block is kept but now mirrors the light theme — this avoids issues if any component still references dark: variants
+  - Shadcn UI components automatically pick up new theme via CSS variables — no need to edit individual shadcn components
+  - Flow node components (start-node, story-node, end-node) still have zinc/cyan hardcoded — these are addressed in US-011
+  - kanban-board, kanban-card, project-switcher, story-sheet, story-edit-dialog still have dark theme colors — they may be cleaned up in US-012 if unused
+  - The `font-serif` Tailwind class maps to `var(--font-serif)` which is Cormorant Garamond — use for headings
 ---
