@@ -428,14 +428,14 @@ function stepPluginGuide(): void {
     env.CLAUDE_CODE_GIT_BASH_PATH = config.gitBashPath;
   }
 
-  // Check if already registered
+  // Check if already registered (marketplace or npm)
   let installed = false;
   try {
     const settingsPath = resolve(homedir(), '.claude', 'settings.json');
     if (existsSync(settingsPath)) {
       const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
       const enabled = settings.enabledPlugins ?? {};
-      if (enabled[PLUGIN_KEY] === true) {
+      if (enabled[PLUGIN_KEY] === true || enabled['claude-ralph-agent@npm'] === true) {
         console.log(OK('  ✓ Skills 已注册到 Claude Code'));
         installed = true;
       }

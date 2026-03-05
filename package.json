@@ -1,6 +1,6 @@
 {
   "name": "claude-ralph-agent",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Ralph 管理工具 — 安装引导、启动控制台、管理项目",
   "type": "module",
   "author": "sickone075",
@@ -18,7 +18,8 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "postinstall": "node -e \"console.log('\\n  Run [ralph init] to register Claude Code skills.\\n')\"",
+    "postinstall": "node scripts/postinstall.mjs",
+    "preuninstall": "node scripts/preuninstall.mjs",
     "prepublishOnly": "tsc && cd dashboard && npm install && npm run build && cd .. && npx esbuild dashboard/server/index.ts --bundle --platform=node --format=cjs --outfile=dist/dashboard-server.cjs --external:express --external:ws --external:chokidar --external:simple-git"
   },
   "files": [
@@ -29,6 +30,8 @@
     "scripts/ralph/ralph.sh",
     "scripts/ralph/CLAUDE.md",
     "scripts/ralph/prd.json.example",
+    "scripts/postinstall.mjs",
+    "scripts/preuninstall.mjs",
     "tests/",
     "CLAUDE.md"
   ],
