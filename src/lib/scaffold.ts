@@ -15,14 +15,14 @@ export function getPackageRoot(): string {
 }
 
 /**
- * Scaffold scripts/ralph/ directory in a user's project.
+ * Scaffold ralph/ directory in a user's project.
  * Copies ralph.sh, CLAUDE.md, and creates progress.txt if missing.
  * Never overwrites existing files (except ralph.sh which should stay current).
  */
 export function scaffoldProject(projectPath: string): { created: string[]; skipped: string[] } {
   const pkgRoot = getPackageRoot();
   const srcDir = resolve(pkgRoot, 'scripts/ralph');
-  const destDir = resolve(projectPath, 'scripts/ralph');
+  const destDir = resolve(projectPath, 'ralph');
 
   const created: string[] = [];
   const skipped: string[] = [];
@@ -35,7 +35,7 @@ export function scaffoldProject(projectPath: string): { created: string[]; skipp
   const ralphDest = resolve(destDir, 'ralph.sh');
   if (existsSync(ralphSrc)) {
     copyFileSync(ralphSrc, ralphDest);
-    created.push('scripts/ralph/ralph.sh');
+    created.push('ralph/ralph.sh');
   }
 
   // Copy CLAUDE.md only if not exists (user may have customized it)
@@ -43,18 +43,18 @@ export function scaffoldProject(projectPath: string): { created: string[]; skipp
   const claudeDest = resolve(destDir, 'CLAUDE.md');
   if (existsSync(claudeSrc) && !existsSync(claudeDest)) {
     copyFileSync(claudeSrc, claudeDest);
-    created.push('scripts/ralph/CLAUDE.md');
+    created.push('ralph/CLAUDE.md');
   } else if (existsSync(claudeDest)) {
-    skipped.push('scripts/ralph/CLAUDE.md (already exists)');
+    skipped.push('ralph/CLAUDE.md (already exists)');
   }
 
   // Create empty progress.txt if not exists
   const progressDest = resolve(destDir, 'progress.txt');
   if (!existsSync(progressDest)) {
     writeFileSync(progressDest, '');
-    created.push('scripts/ralph/progress.txt');
+    created.push('ralph/progress.txt');
   } else {
-    skipped.push('scripts/ralph/progress.txt (already exists)');
+    skipped.push('ralph/progress.txt (already exists)');
   }
 
   // Copy prd.json.example if no prd.json exists
@@ -62,7 +62,7 @@ export function scaffoldProject(projectPath: string): { created: string[]; skipp
   const prdExampleSrc = resolve(srcDir, 'prd.json.example');
   if (!existsSync(prdDest) && existsSync(prdExampleSrc)) {
     copyFileSync(prdExampleSrc, resolve(destDir, 'prd.json.example'));
-    created.push('scripts/ralph/prd.json.example');
+    created.push('ralph/prd.json.example');
   }
 
   return { created, skipped };

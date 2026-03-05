@@ -94,6 +94,18 @@ export function getRalphScriptPath(): string {
   if (process.env.RALPH_SCRIPTS_DIR) {
     return path.join(process.env.RALPH_SCRIPTS_DIR, "ralph.sh");
   }
+  // Prefer user project's ralph/ralph.sh (scaffolded by ralph init)
+  const config = getConfig();
+  if (config.activeProject) {
+    const project = config.projects.find((p) => p.name === config.activeProject);
+    if (project) {
+      const fromProject = path.join(project.path, "ralph", "ralph.sh");
+      if (fs.existsSync(fromProject)) {
+        return fromProject;
+      }
+    }
+  }
+  // Fallback: package source (dev mode)
   const fromDashboard = path.resolve(process.cwd(), "..", "scripts", "ralph", "ralph.sh");
   if (fs.existsSync(fromDashboard)) {
     return fromDashboard;
@@ -113,7 +125,7 @@ export function getActiveProjectPaths(): ActiveProjectPaths | null {
     return null;
   }
 
-  const scriptsRalphDir = path.join(project.path, "scripts", "ralph");
+  const scriptsRalphDir = path.join(project.path, "ralph");
 
   return {
     prdPath: path.join(scriptsRalphDir, "prd.json"),

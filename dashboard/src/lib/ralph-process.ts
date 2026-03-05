@@ -28,7 +28,7 @@ export function getPidFilePath(): string | null {
   if (!projectPaths) {
     return null;
   }
-  return path.join(projectPaths.projectPath, "scripts", "ralph", ".ralph-pid");
+  return path.join(projectPaths.projectPath, "ralph", ".ralph-pid");
 }
 
 export function detectRunningFromPid(): { running: boolean; pid: number | null } {

@@ -53,7 +53,7 @@ program
 
 program
   .command('setup')
-  .description('为所有已注册项目初始化 Ralph 运行环境（scripts/ralph/）')
+  .description('为所有已注册项目初始化 Ralph 运行环境（ralph/）')
   .action(async () => {
     await runSetup();
   });

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Auto-register Ralph skills into Claude Code on npm install.
-// Also scaffolds scripts/ralph/ in existing registered projects.
+// Also scaffolds ralph/ in existing registered projects.
 // Never fails npm install — all errors caught with manual fallback.
 
 import { readFileSync, writeFileSync, copyFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -74,7 +74,7 @@ try {
   console.log('    /plugin install claude-ralph-agent@ralph-marketplace');
 }
 
-// Step 2: Scaffold scripts/ralph/ in all registered projects
+// Step 2: Scaffold ralph/ in all registered projects
 try {
   const ralphConfigPath = resolve(homedir(), '.ralph', 'config.json');
   if (existsSync(ralphConfigPath)) {
@@ -87,7 +87,7 @@ try {
       let scaffolded = 0;
       for (const project of projects) {
         if (!project.path || !existsSync(project.path)) continue;
-        const destDir = resolve(project.path, 'scripts/ralph');
+        const destDir = resolve(project.path, 'ralph');
         mkdirSync(destDir, { recursive: true });
         copyFileSync(ralphSrc, resolve(destDir, 'ralph.sh'));
         if (existsSync(claudeSrc) && !existsSync(resolve(destDir, 'CLAUDE.md'))) {
@@ -99,7 +99,7 @@ try {
         scaffolded++;
       }
       if (scaffolded > 0) {
-        console.log(`  ✓ Updated scripts/ralph/ in ${scaffolded} project(s)`);
+        console.log(`  ✓ Updated ralph/ in ${scaffolded} project(s)`);
       }
     }
   }
